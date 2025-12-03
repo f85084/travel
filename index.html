@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Zen+Maru+Gothic:wght=500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --primary: #8b5f65; /* 豆沙紅 - 懷舊感 */
+        --secondary: #e8dcc4; /* 米色 - 溫暖 */
+        --bg-grad: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+      }
+
+      body {
+        font-family: "Noto Sans TC", sans-serif;
+        background: var(--bg-grad);
+        color: #4a4a4a;
+        overflow-x: hidden;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: "Zen Maru Gothic", sans-serif;
+      }
+
+      /* 毛玻璃卡片特效 */
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        transition: all 0.3s ease;
+      }
+
+      .glass-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.15);
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      /* 滾動動畫 */
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+      }
+      .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* 標籤樣式 */
+      .tag-pill {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      .tag-relax {
+        background: #d1fae5;
+        color: #065f46;
+      } /* 輕鬆 */
+      .tag-food {
+        background: #fee2e2;
+        color: #991b1b;
+      } /* 美食 */
+      .tag-culture {
+        background: #e0f2fe;
+        color: #075985;
+      } /* 文化 */
+      .tag-photo {
+        background: #fef3c7;
+        color: #92400e;
+      } /* 拍照 */
+
+      .nav-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: var(--primary);
+        color: white;
+        padding: 15px;
+        border-radius: 50%;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+        z-index: 50;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .nav-btn:hover {
+        transform: scale(1.1);
+      }
+      .address-link {
+        transition: color 0.2s;
+      }
+      .address-link:hover {
+        color: #d97706; /* 橘色強調 */
+      }
+    </style>
+  </head>
+  <body class="pb-20">
+    <header
+      class="relative w-full h-[60vh] flex items-center justify-center overflow-hidden"
+    >
+      <div class="absolute inset-0 z-0">
+        <img
+          src="https://images.unsplash.com/photo-1676384296571-7d91c26618b6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+          alt="Background"
+          class="w-full h-full object-cover opacity-80"
+        />
+        <div
+          class="absolute inset-0 bg-gradient-to-b from-transparent to-white"
+        ></div>
+      </div>
+
+      <div class="relative z-10 text-center px-4 reveal active">
+        <h1
+          class="text-4xl md:text-6xl font-bold text-gray-800 mb-4 drop-shadow-sm"
+        >
+          新竹福華
+        </h1>
+
+        <div class="mt-8 flex justify-center gap-4">
+          <a
+            href="#day1"
+            class="px-6 py-2 bg-[#8B5F65] text-white rounded-full hover:bg-[#70494e] transition shadow-lg"
+            >第一天</a
+          >
+          <a
+            href="#day2"
+            class="px-6 py-2 bg-white text-[#8B5F65] border border-[#8B5F65] rounded-full hover:bg-gray-50 transition shadow-lg"
+            >第二天</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-12">
+      <section id="day1" class="mb-24 scroll-mt-20">
+        <div class="flex items-center justify-center mb-12 reveal">
+          <div class="h-px w-12 bg-gray-300"></div>
+          <h2 class="text-3xl font-bold text-gray-800 mx-4">Day 1</h2>
+          <div class="h-px w-12 bg-gray-300"></div>
+        </div>
+        <p class="text-center text-gray-500 mb-12 reveal"></p>
+
+        <div class="grid gap-8 grid-cols-1 max-w-3xl mx-auto">
+          <div class="reveal">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-gray-300"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">
+                ⏰ 上午 (10:30 前)
+              </div>
+              <h3 class="text-xl font-bold mb-2 flex items-center">
+                <i class="fas fa-car-side mr-2 text-gray-400"></i> 台北出發 →
+                桃園
+              </h3>
+              <p class="text-gray-600 text-sm">
+                彈性出發，避開午餐尖峰時段。車程約 40-50 分鐘。
+              </p>
+              <div class="mt-4">
+                <span class="tag-pill tag-relax">交通輕鬆</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-delay="100">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-red-300"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">⏰ 上午</div>
+              <h3 class="text-xl font-bold mb-2">手信霧隱城</h3>
+              <p class="text-gray-600 mb-3">
+                全室內日式造景，**雨天備案首選**。動線平坦，適合長輩小孩拍照互動。
+              </p>
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                  <i class="fas fa-map-marker-alt mr-1"></i>
+                  桃園市龍潭區民豐一街99號
+                </p>
+                <a
+                  href="https://maps.google.com/maps?q=桃園市龍潭區民豐一街99號"
+                  target="_blank"
+                  class="address-link text-xs text-orange-500 font-medium flex items-center mt-1"
+                >
+                  <i class="fas fa-directions mr-1"></i> Google Map 導航
+                </a>
+              </div>
+              <div class="mt-4">
+                <span class="tag-pill tag-photo">室內/拍照</span>
+                <span class="tag-pill tag-relax">長輩友善</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-delay="300">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-[#8B5F65]"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">
+                ⏰ 16:00 左右
+              </div>
+              <h3 class="text-xl font-bold mb-2">新竹福華大飯店 Check-in</h3>
+              <p class="text-gray-600 text-sm mb-2">
+                位於市中心，辦理入住後可先使用飯店設施或稍作休息，補充體力。
+              </p>
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                  <i class="fas fa-map-marker-alt mr-1"></i>
+                  新竹市北區中華路二段168號
+                </p>
+                <a
+                  href="https://maps.google.com/maps?q=新竹市北區中華路二段168號"
+                  target="_blank"
+                  class="address-link text-xs text-orange-500 font-medium flex items-center mt-1"
+                >
+                  <i class="fas fa-directions mr-1"></i> Google Map 導航
+                </a>
+              </div>
+              <div class="mt-4">
+                <span class="tag-pill tag-relax">休息</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-delay="400">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-pink-300"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">⏰ 晚餐</div>
+              <h3 class="text-xl font-bold mb-2">城隍廟商圈美食</h3>
+              <ul class="list-disc list-inside text-gray-600 text-sm space-y-1">
+                <li><strong>必嚐：</strong> 肉圓、潤餅、貢丸湯。</li>
+                <li><strong>備註：</strong> 步行或短程車程前往。</li>
+              </ul>
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                  <i class="fas fa-map-marker-alt mr-1"></i>
+                  新竹市北區中山路75號 (新竹都城隍廟)
+                </p>
+                <a
+                  href="https://maps.google.com/maps?q=新竹都城隍廟"
+                  target="_blank"
+                  class="address-link text-xs text-orange-500 font-medium flex items-center mt-1"
+                >
+                  <i class="fas fa-directions mr-1"></i> Google Map 導航
+                </a>
+              </div>
+              <div class="mt-4">
+                <span class="tag-pill tag-food">在地美食</span>
+                <span class="tag-pill tag-relax">短程</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="day2" class="pt-12 scroll-mt-20">
+        <div class="flex items-center justify-center mb-12 reveal">
+          <div class="h-px w-12 bg-gray-300"></div>
+          <h2 class="text-3xl font-bold text-gray-800 mx-4">Day 2</h2>
+          <div class="h-px w-12 bg-gray-300"></div>
+        </div>
+        <p class="text-center text-gray-500 mb-12 reveal"></p>
+
+        <div class="grid gap-8 grid-cols-1 max-w-3xl mx-auto">
+          <div class="reveal">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-[#8B5F65]"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">
+                ⏰ 上午 (11:00 前)
+              </div>
+              <h3 class="text-xl font-bold mb-2">飯店早餐 → Check-out</h3>
+              <p class="text-gray-600 text-sm">
+                悠閒享用早餐，建議 11:00 退房出發。
+              </p>
+              <div class="mt-4">
+                <span class="tag-pill tag-relax">悠閒時光</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-delay="100">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-yellow-300"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">⏰ 上午</div>
+              <h3 class="text-xl font-bold mb-2">內灣合興車站</h3>
+              <p class="text-gray-600 mb-2">火車站</p>
+              <div class="mt-3 pt-3 border-t border-gray-100">
+                <p class="text-xs text-gray-500">
+                  <i class="fas fa-map-marker-alt mr-1"></i>
+                  新竹縣橫山鄉中山街一段17號
+                </p>
+                <a
+                  href="https://maps.google.com/maps?q=內灣合興車站"
+                  target="_blank"
+                  class="address-link text-xs text-orange-500 font-medium flex items-center mt-1"
+                >
+                  <i class="fas fa-directions mr-1"></i> Google Map 導航
+                </a>
+              </div>
+              <div class="mt-4">
+                <span class="tag-pill tag-photo">懷舊鐵道</span>
+                <span class="tag-pill tag-relax">平坦好走</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal" data-delay="400">
+            <div
+              class="glass-card p-6 rounded-2xl h-full border-l-4 border-gray-500"
+            >
+              <div class="text-lg font-bold text-[#8B5F65] mb-1">
+                ⏰ 16:00 左右
+              </div>
+              <h3 class="text-xl font-bold mb-2">快樂返程</h3>
+              <p class="text-gray-600">
+                預計 16:00 左右回程，避開最壅塞時段，結束美好的兩天一夜之旅。
+              </p>
+              <i
+                class="fas fa-home text-3xl text-[#8B5F65] mt-4 opacity-50"
+              ></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="mt-24 reveal">
+        <h2 class="text-2xl font-bold text-center mb-8 text-gray-700">
+          📍 景點資訊卡 (導航快速通道)
+        </h2>
+        <div class="grid grid-cols-1 gap-6 max-w-3xl mx-auto">
+          <div class="bg-white p-6 rounded-xl shadow-md">
+            <h4 class="font-bold text-lg text-[#8B5F65] mb-2">
+              新竹福華大飯店
+            </h4>
+            <p class="text-sm text-gray-600 mb-2">
+              <i class="fas fa-map-marker-alt mr-2"></i
+              >新竹市北區中華路二段168號
+            </p>
+            <a
+              href="https://maps.google.com/maps?q=新竹市北區中華路二段168號"
+              target="_blank"
+              class="address-link text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center mt-2"
+            >
+              <i class="fas fa-directions mr-1"></i> Google Map 導航
+            </a>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-md">
+            <h4 class="font-bold text-lg text-[#8B5F65] mb-2">手信霧隱城</h4>
+            <p class="text-sm text-gray-600 mb-2">
+              <i class="fas fa-map-marker-alt mr-2"></i>桃園市龍潭區民豐一街99號
+            </p>
+            <a
+              href="https://maps.google.com/maps?q=桃園市龍潭區民豐一街99號"
+              target="_blank"
+              class="address-link text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center mt-2"
+            >
+              <i class="fas fa-directions mr-1"></i> Google Map 導航
+            </a>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-md">
+            <h4 class="font-bold text-lg text-[#8B5F65] mb-2">
+              桃園客家文化館
+            </h4>
+            <p class="text-sm text-gray-600 mb-2">
+              <i class="fas fa-map-marker-alt mr-2"></i
+              >桃園市龍潭區中正路三林段500號
+            </p>
+            <a
+              href="https://maps.google.com/maps?q=桃園市龍潭區中正路三林段500號"
+              target="_blank"
+              class="address-link text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center mt-2"
+            >
+              <i class="fas fa-directions mr-1"></i> Google Map 導航
+            </a>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-md">
+            <h4 class="font-bold text-lg text-[#8B5F65] mb-2">內灣合興車站</h4>
+            <p class="text-sm text-gray-600 mb-2">
+              <i class="fas fa-map-marker-alt mr-2"></i
+              >新竹縣橫山鄉中山街一段17號
+            </p>
+            <a
+              href="https://maps.google.com/maps?q=內灣合興車站"
+              target="_blank"
+              class="address-link text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center mt-2"
+            >
+              <i class="fas fa-directions mr-1"></i> Google Map 導航
+            </a>
+          </div>
+          <div class="bg-white p-6 rounded-xl shadow-md">
+            <h4 class="font-bold text-lg text-[#8B5F65] mb-2">內灣老街</h4>
+            <p class="text-sm text-gray-600 mb-2">
+              <i class="fas fa-map-marker-alt mr-2"></i>新竹縣橫山鄉中正路
+            </p>
+            <a
+              href="https://maps.google.com/maps?q=內灣老街"
+              target="_blank"
+              class="address-link text-xs text-orange-500 hover:text-orange-700 font-medium flex items-center mt-2"
+            >
+              <i class="fas fa-directions mr-1"></i> Google Map 導航
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <button
+      onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+      class="nav-btn"
+    >
+      <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <script>
+      // Scroll Reveal Animation
+      function reveal() {
+        var reveals = document.querySelectorAll(".reveal");
+        for (var i = 0; i < reveals.length; i++) {
+          var windowHeight = window.innerHeight;
+          var elementTop = reveals[i].getBoundingClientRect().top;
+          var elementVisible = 150;
+          // Add delay based on data-delay attribute
+          var delay = parseInt(reveals[i].getAttribute("data-delay")) || 0;
+
+          if (elementTop < windowHeight - elementVisible) {
+            // Apply animation with delay
+            setTimeout(
+              function (element) {
+                element.classList.add("active");
+              },
+              delay,
+              reveals[i]
+            );
+          }
+        }
+      }
+      window.addEventListener("scroll", reveal);
+      // Trigger once on load
+      reveal();
+    </script>
+  </body>
+</html>
