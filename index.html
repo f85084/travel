@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>12/13-12/14行程表</title>
+    <title></title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Vue.js 3 -->
@@ -16,7 +16,7 @@
     <style>
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f0f4f8;
+            background-color: #f8fafc;
         }
         /* 針對長輩優化的字體大小與行高 */
         .text-senior-base { font-size: 1.125rem; line-height: 1.75rem; }
@@ -32,70 +32,108 @@
             transform: scale(1.1) rotate(5deg);
         }
         
-        /* 自定義捲軸隱藏 (針對水平捲動區塊) */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        /* 迷你導航列動畫 */
+        .slide-down {
+            animation: slideDown 0.3s ease-out forwards;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-<div id="app" class="min-h-screen pb-20">
-    <!-- 頂部導航 (固定在頂部) -->
-    <header class="relative shadow-xl sticky top-0 z-50 overflow-hidden">
-        <!-- 背景圖與羽化效果 -->
+<div id="app" class="min-h-screen pb-20 relative">
+
+    <!-- 1. 全新 Hero 表頭 (使用者指定樣式) -->
+    <header ref="mainHeader" class="relative w-full h-[60vh] flex items-center justify-center overflow-hidden">
+        <!-- 背景圖 -->
         <div class="absolute inset-0 z-0">
-            <!-- 旅遊意象背景圖 -->
-            <img src="http://googleusercontent.com/image_generation_content/0" class="w-full h-full object-cover" alt="Travel Background">
-            <!-- 羽化漸層遮罩 (由深綠到半透明，營造柔和感並確保文字清晰) -->
-            <div class="absolute inset-0 bg-gradient-to-b from-teal-900/95 via-teal-800/85 to-teal-900/95 backdrop-blur-[1px]"></div>
+            <img src="https://images.unsplash.com/photo-1676384296571-7d91c26618b6?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Background" class="w-full h-full object-cover opacity-90">
+            <div class="absolute inset-0 bg-gradient-to-b from-black/20 to-white/90"></div>
+        </div>
+        
+        <!-- 重整按鈕 (右上角) -->
+        <div class="absolute top-4 right-4 z-20">
+            <button @click="fetchFromSheet" class="bg-white/30 hover:bg-white/50 backdrop-blur-md text-white border border-white/50 p-2 px-3 rounded-full flex items-center gap-2 transition shadow-lg" title="重新讀取資料">
+                <i class="fas fa-sync-alt text-lg"></i>
+            </button>
         </div>
 
-        <div class="container mx-auto px-4 py-4 relative z-10">
-            <!-- 第一排：標題與重整按鈕 -->
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h1 class="text-senior-xl font-bold tracking-wide text-white drop-shadow-md">樂齡逍遙遊</h1>
-                    <p class="text-teal-50 text-lg mt-1 font-medium tracking-wide">12/13 (五) - 12/14 (六)</p>
-                </div>
-                <button @click="fetchFromSheet" class="bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/30 p-2 px-3 rounded-lg flex items-center gap-2 transition shadow-lg" title="重新讀取資料">
-                    <i class="fas fa-sync-alt text-lg"></i>
-                    <span class="hidden md:inline text-base">重整</span>
-                </button>
-            </div>
+        <!-- 主要內容 -->
+        <div class="relative z-10 text-center px-4 animate-fade-in-up">
+            <h1 class="text-5xl md:text-7xl font-bold text-gray-800 mb-6 drop-shadow-md tracking-wider">
+                
+            </h1>
+            <p class="text-gray-600 text-xl font-medium mb-8 tracking-wide">12/13 - 12/14</p>
 
-            <!-- 第二排：天數切換 (固定在 Header 內) -->
-            <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
+            <div class="flex justify-center gap-6">
                 <button 
-                    v-for="day in [1, 2]" 
-                    :key="day"
-                    @click="currentDay = day"
+                    @click="setDay(1)" 
                     :class="[
-                        'flex-1 px-4 py-2 rounded-lg text-lg font-bold transition-all duration-300 whitespace-nowrap shadow-sm border',
-                        currentDay === day 
-                            ? 'bg-orange-500 border-orange-400 text-white transform scale-[1.02] shadow-md' 
-                            : 'bg-white/10 border-white/10 text-teal-50 hover:bg-white/20'
+                        'px-8 py-3 rounded-full transition shadow-lg text-xl font-bold',
+                        currentDay === 1 
+                            ? 'bg-[#8B5F65] text-white hover:bg-[#70494e]' 
+                            : 'bg-white text-[#8B5F65] border-2 border-[#8B5F65] hover:bg-gray-50'
                     ]"
                 >
-                    <i :class="day === 1 ? 'fas fa-sun' : 'fas fa-cloud-sun'" class="mr-2 opacity-80"></i>
-                    第 {{ day }} 天 (12/{{ 12 + day }})
+                    第一天
+                </button>
+                <button 
+                    @click="setDay(2)" 
+                    :class="[
+                        'px-8 py-3 rounded-full transition shadow-lg text-xl font-bold',
+                        currentDay === 2 
+                            ? 'bg-[#8B5F65] text-white hover:bg-[#70494e]' 
+                            : 'bg-white text-[#8B5F65] border-2 border-[#8B5F65] hover:bg-gray-50'
+                    ]"
+                >
+                    第二天
                 </button>
             </div>
         </div>
     </header>
 
+    <!-- 2. 懸浮迷你導航列 (當主表頭滑出視窗時顯示，確保「天數置頂」體驗) -->
+    <div v-show="showStickyNav" class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-md py-3 px-4 slide-down border-b border-[#8B5F65]/20">
+        <div class="container mx-auto flex justify-between items-center max-w-3xl">
+            <span class="font-bold text-[#8B5F65] text-lg hidden md:block">新竹福華之旅</span>
+            <div class="flex space-x-2 mx-auto md:mx-0 w-full md:w-auto">
+                <button 
+                    @click="setDay(1)" 
+                    :class="[
+                        'flex-1 md:flex-none px-6 py-2 rounded-full text-lg font-bold transition border',
+                        currentDay === 1 
+                            ? 'bg-[#8B5F65] text-white border-[#8B5F65]' 
+                            : 'bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200'
+                    ]"
+                >
+                    第一天
+                </button>
+                <button 
+                    @click="setDay(2)" 
+                    :class="[
+                        'flex-1 md:flex-none px-6 py-2 rounded-full text-lg font-bold transition border',
+                        currentDay === 2 
+                            ? 'bg-[#8B5F65] text-white border-[#8B5F65]' 
+                            : 'bg-gray-100 text-gray-500 border-transparent hover:bg-gray-200'
+                    ]"
+                >
+                    第二天
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 行程列表 -->
-    <main class="container mx-auto px-4 mt-6 max-w-3xl">
-        <div v-if="loading" class="text-center py-10">
-            <i class="fas fa-spinner fa-spin text-4xl text-teal-600"></i>
-            <p class="mt-4 text-xl text-gray-600">資料讀取中，請稍候...</p>
+    <main class="container mx-auto px-4 mt-8 max-w-3xl min-h-[500px]">
+        <div v-if="loading" class="text-center py-20">
+            <i class="fas fa-spinner fa-spin text-4xl text-[#8B5F65]"></i>
+            <p class="mt-4 text-xl text-gray-600">行程讀取中...</p>
         </div>
 
-        <div v-else class="space-y-8 pt-2">
+        <div v-else class="space-y-10 pb-12">
             <!-- 若無資料顯示 -->
             <div v-if="currentDayActivities.length === 0" class="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
                 <i class="fas fa-coffee text-4xl text-gray-300 mb-3"></i>
@@ -106,11 +144,11 @@
             <div 
                 v-for="(item, index) in currentDayActivities" 
                 :key="index"
-                class="bg-white rounded-2xl shadow-md border-l-8 border-teal-500 p-6 relative card-hover transition-all hover:shadow-xl mt-6"
+                class="bg-white rounded-2xl shadow-md border-l-8 border-[#8B5F65] p-6 relative card-hover transition-all hover:shadow-xl mt-6 group"
             >
                 <!-- 浮動圓形圖示 -->
                 <div 
-                    class="icon-circle absolute -left-4 -top-5 w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl border-4 border-f0f4f8 shadow-lg z-10"
+                    class="icon-circle absolute -left-4 -top-5 w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl border-4 border-[#f8fafc] shadow-lg z-10"
                     :class="getTypeColor(item.type)"
                 >
                     <i :class="getTypeIcon(item.type)"></i>
@@ -124,7 +162,7 @@
                         </span>
                         <button 
                             @click="editItem(item)"
-                            class="text-gray-400 hover:text-teal-600 p-2 rounded-full hover:bg-teal-50 transition"
+                            class="text-gray-300 hover:text-[#8B5F65] p-2 rounded-full hover:bg-red-50 transition"
                         >
                             <i class="fas fa-pen text-xl"></i>
                         </button>
@@ -138,12 +176,12 @@
                     <div class="mb-4">
                         <div v-if="item.address && item.address !== '-' && item.address !== '–'" class="flex items-center flex-wrap gap-3">
                             <span class="text-senior-base text-gray-600 flex items-center">
-                                <i class="fas fa-map-marker-alt text-red-500 mr-2 text-xl"></i>
+                                <i class="fas fa-map-marker-alt text-[#8B5F65] mr-2 text-xl"></i>
                                 <span class="border-b border-dashed border-gray-300 pb-0.5">{{ item.address }}</span>
                             </span>
                             <button 
                                 @click="openMap(item.address)"
-                                class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2 rounded-full text-lg font-medium transition flex items-center shadow-sm"
+                                class="bg-[#8B5F65]/10 hover:bg-[#8B5F65]/20 text-[#8B5F65] border border-[#8B5F65]/20 px-4 py-2 rounded-full text-lg font-medium transition flex items-center shadow-sm"
                             >
                                 <i class="fas fa-map-marked-alt mr-2"></i>
                                 導航
@@ -155,9 +193,9 @@
                     </div>
 
                     <!-- 備註區塊 -->
-                    <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100 shadow-inner">
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-inner">
                         <p class="text-senior-base text-gray-700 flex items-start">
-                            <i class="fas fa-info-circle text-orange-400 mr-3 mt-1.5 flex-shrink-0"></i>
+                            <i class="fas fa-info-circle text-[#8B5F65] mr-3 mt-1.5 flex-shrink-0 opacity-70"></i>
                             <span>{{ item.note }}</span>
                         </p>
                     </div>
@@ -167,7 +205,7 @@
 
         <!-- 新增按鈕 (底部) -->
         <div class="text-center mt-12 mb-8">
-            <button @click="openAddModal" class="bg-teal-600 hover:bg-teal-700 text-white rounded-full px-10 py-4 text-xl font-bold shadow-xl flex items-center justify-center mx-auto gap-3 transition transform hover:scale-105 active:scale-95">
+            <button @click="openAddModal" class="bg-[#8B5F65] hover:bg-[#70494e] text-white rounded-full px-10 py-4 text-xl font-bold shadow-xl flex items-center justify-center mx-auto gap-3 transition transform hover:scale-105 active:scale-95">
                 <i class="fas fa-plus-circle text-2xl"></i> 新增行程
             </button>
         </div>
@@ -176,31 +214,31 @@
     <!-- 編輯/新增 彈出視窗 -->
     <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-fade-in-up">
-            <div class="bg-teal-700 px-6 py-4 flex justify-between items-center bg-gradient-to-r from-teal-700 to-teal-600">
+            <div class="bg-[#8B5F65] px-6 py-4 flex justify-between items-center">
                 <h3 class="text-2xl font-bold text-white flex items-center gap-2">
                     <i class="fas fa-edit opacity-80"></i>
                     {{ isEditing ? '編輯行程' : '新增行程' }}
                 </h3>
-                <button @click="closeModal" class="text-teal-100 hover:text-white text-4xl leading-none">&times;</button>
+                <button @click="closeModal" class="text-white/80 hover:text-white text-4xl leading-none">&times;</button>
             </div>
             
             <div class="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
                 <div>
                     <label class="block text-gray-700 text-xl font-bold mb-2">活動名稱</label>
-                    <input v-model="form.title" type="text" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl focus:border-teal-500 focus:ring-2 focus:ring-teal-200 focus:outline-none transition">
+                    <input v-model="form.title" type="text" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl focus:border-[#8B5F65] focus:ring-1 focus:ring-[#8B5F65] focus:outline-none transition">
                 </div>
 
                 <div class="grid grid-cols-2 gap-5">
                     <div>
                         <label class="block text-gray-700 text-xl font-bold mb-2">天數</label>
-                        <select v-model.number="form.day" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl bg-white focus:border-teal-500 focus:outline-none">
-                            <option value="1">第 1 天</option>
-                            <option value="2">第 2 天</option>
+                        <select v-model.number="form.day" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl bg-white focus:border-[#8B5F65] focus:outline-none">
+                            <option value="1">第一天</option>
+                            <option value="2">第二天</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-gray-700 text-xl font-bold mb-2">類型</label>
-                        <select v-model="form.type" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl bg-white focus:border-teal-500 focus:outline-none">
+                        <select v-model="form.type" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl bg-white focus:border-[#8B5F65] focus:outline-none">
                             <option value="交通">交通</option>
                             <option value="景點">景點</option>
                             <option value="餐飲">餐飲</option>
@@ -212,18 +250,18 @@
 
                 <div>
                     <label class="block text-gray-700 text-xl font-bold mb-2">地址</label>
-                    <input v-model="form.address" type="text" placeholder="若無可填 '-'" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl focus:border-teal-500 focus:outline-none">
+                    <input v-model="form.address" type="text" placeholder="若無可填 '-'" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl focus:border-[#8B5F65] focus:outline-none">
                 </div>
 
                 <div>
                     <label class="block text-gray-700 text-xl font-bold mb-2">備註</label>
-                    <textarea v-model="form.note" rows="3" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl focus:border-teal-500 focus:outline-none"></textarea>
+                    <textarea v-model="form.note" rows="3" class="w-full border-2 border-gray-300 p-4 rounded-xl text-xl focus:border-[#8B5F65] focus:outline-none"></textarea>
                 </div>
             </div>
 
             <div class="p-6 bg-gray-50 flex justify-end space-x-4 border-t">
                 <button @click="closeModal" class="px-8 py-3 rounded-xl text-gray-600 bg-gray-200 hover:bg-gray-300 text-xl font-bold transition">取消</button>
-                <button @click="submitForm" class="px-8 py-3 rounded-xl text-white bg-teal-600 hover:bg-teal-700 text-xl font-bold shadow-md flex items-center transition">
+                <button @click="submitForm" class="px-8 py-3 rounded-xl text-white bg-[#8B5F65] hover:bg-[#70494e] text-xl font-bold shadow-md flex items-center transition">
                     <i v-if="submitting" class="fas fa-spinner fa-spin mr-2"></i>
                     {{ submitting ? '處理中...' : '確認儲存' }}
                 </button>
@@ -240,7 +278,7 @@
 </div>
 
 <script>
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
     createApp({
         setup() {
@@ -251,6 +289,8 @@
             const isModalOpen = ref(false);
             const isEditing = ref(false);
             const itinerary = ref([]);
+            const showStickyNav = ref(false);
+            const mainHeader = ref(null);
             
             // 預設資料 (對應使用者提供的第一筆資料)
             const initialData = [
@@ -281,6 +321,14 @@
                 setTimeout(() => notification.value.show = false, 3000);
             };
 
+            const setDay = (day) => {
+                currentDay.value = day;
+                // 切換天數時可考慮自動滾動到內容區
+                if (showStickyNav.value) {
+                    window.scrollTo({ top: window.innerHeight * 0.6, behavior: 'smooth' });
+                }
+            };
+
             // 計算當前顯示天數的活動
             const currentDayActivities = computed(() => {
                 return itinerary.value
@@ -294,7 +342,7 @@
                     '交通': 'bg-blue-500',
                     '景點': 'bg-green-600',
                     '餐飲': 'bg-orange-500',
-                    '住宿': 'bg-purple-600',
+                    '住宿': 'bg-[#8B5F65]',
                     '活動': 'bg-pink-500'
                 };
                 return map[type] || 'bg-gray-500';
@@ -323,7 +371,6 @@
             const fetchFromSheet = async () => {
                 loading.value = true;
                 try {
-                    // Google Sheet CSV Export Link
                     const sheetId = '1ldKQ9oYOyx5kpBsiuB46qh9hkpZexGk2tGp5GIHRBo4';
                     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
                     
@@ -331,12 +378,9 @@
                     if (!response.ok) throw new Error("Network response was not ok");
                     
                     const text = await response.text();
-                    // 解析 CSV (簡單解析，假設格式固定)
-                    const rows = text.split('\n').slice(1); // 去掉標題
+                    const rows = text.split('\n').slice(1);
                     const parsedData = rows.map(row => {
-                        // 處理 CSV 逗號分隔問題 (簡單處理)
                         const cols = row.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-                        // 如果欄位不足，跳過
                         if(cols.length < 5) return null;
                         
                         return {
@@ -353,13 +397,12 @@
                         itinerary.value = parsedData;
                         showNotification('資料同步成功！');
                     } else {
-                        itinerary.value = [...initialData]; // fallback
+                        itinerary.value = [...initialData];
                         showNotification('表單為空，載入預設資料', 'error');
                     }
 
                 } catch (error) {
                     console.error('Fetch error:', error);
-                    // 如果跨域失敗或網路錯誤，使用初始資料
                     if (itinerary.value.length === 0) {
                         itinerary.value = [...initialData];
                     }
@@ -369,7 +412,7 @@
                 }
             };
 
-            // 開啟新增視窗
+            // Modal Controls
             const openAddModal = () => {
                 isEditing.value = false;
                 form.value = {
@@ -383,10 +426,9 @@
                 isModalOpen.value = true;
             };
 
-            // 開啟編輯視窗
             const editItem = (item) => {
                 isEditing.value = true;
-                form.value = { ...item }; // 深拷貝
+                form.value = { ...item };
                 isModalOpen.value = true;
             };
 
@@ -394,14 +436,12 @@
                 isModalOpen.value = false;
             };
 
-            // 送出表單 (呼叫 Webhook)
             const submitForm = async () => {
                 submitting.value = true;
                 
                 const maxId = itinerary.value.reduce((max, item) => item.id > max ? item.id : max, 0);
                 const nextId = isEditing.value ? form.value.id : maxId + 1; 
 
-                // 構建 Webhook URL
                 const baseUrl = "https://hook.eu2.make.com/3ula8wfm5sevo6wfu7ihi5tw4lxkgfb5";
                 const queryParams = new URLSearchParams({
                     id: nextId,
@@ -416,7 +456,6 @@
                     const fetchUrl = `${baseUrl}?${queryParams.toString()}`;
                     await fetch(fetchUrl);
                     
-                    // 前端更新畫面
                     if (isEditing.value) {
                         const index = itinerary.value.findIndex(i => i.id === form.value.id);
                         if (index !== -1) {
@@ -446,8 +485,21 @@
                 }
             };
 
+            // Scroll Listener for Sticky Nav
+            const handleScroll = () => {
+                if (mainHeader.value) {
+                    const headerHeight = mainHeader.value.offsetHeight;
+                    showStickyNav.value = window.scrollY > (headerHeight - 80);
+                }
+            };
+
             onMounted(() => {
                 fetchFromSheet();
+                window.addEventListener('scroll', handleScroll);
+            });
+
+            onUnmounted(() => {
+                window.removeEventListener('scroll', handleScroll);
             });
 
             return {
@@ -460,6 +512,9 @@
                 isEditing,
                 form,
                 notification,
+                showStickyNav,
+                mainHeader,
+                setDay,
                 getTypeColor,
                 getTypeIcon,
                 openMap,
@@ -474,13 +529,12 @@
 </script>
 
 <style>
-    /* 動畫效果 */
     @keyframes fade-in-up {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
     .animate-fade-in-up {
-        animation: fade-in-up 0.3s ease-out;
+        animation: fade-in-up 0.8s ease-out;
     }
 </style>
 
