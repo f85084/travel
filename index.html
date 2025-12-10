@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title> 12/13-12/14</title>
+    <title>富士山之旅 - 12/13-12/14</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -63,18 +63,15 @@
 </head>
 <body class="text-fuji-text antialiased safe-bottom">
 
-<!-- Full width layout: Changed max-w-3xl to w-full max-w-7xl for responsive full width feel -->
+<!-- Full width layout -->
 <div id="app" class="w-full max-w-7xl mx-auto min-h-screen bg-fuji-grey relative pb-24">
 
-    <!-- Header -->
-    <header class="bg-fuji-blue text-white p-4 sm:p-6 rounded-b-[20px] shadow-lg sticky top-0 z-10">
+    <!-- Header (Sticky) -->
+    <header class="bg-fuji-blue text-white p-4 sm:p-6 rounded-b-[20px] shadow-lg sticky top-0 z-20">
         <div class="flex justify-between items-center mb-3">
             <div>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-wider">伊豆の旅</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-wider"></h1>
                 <p class="text-blue-100 text-sm sm:text-base mt-1"><i class="fas fa-calendar-alt mr-2"></i>12/13 - 12/14</p>
-            </div>
-             <div class="bg-white/20 p-2 sm:p-3 rounded-full backdrop-blur-sm">
-                <i class="fas fa-mountain text-xl sm:text-2xl"></i>
             </div>
         </div>
 
@@ -84,14 +81,34 @@
                 @click="currentDay = '1'" 
                 :class="['flex-1 py-2 sm:py-3 rounded-xl font-bold text-base sm:text-lg transition-all transform active:scale-95 flex items-center justify-center', currentDay === '1' ? 'bg-white text-fuji-blue shadow-md' : 'bg-fuji-blue/50 text-white/80']">
                 <span>Day 1 (12/13)</span>
-                <i class="fas fa-sun ml-2 text-orange-400"></i> <!-- Mock Weather -->
+                <i class="fas fa-sun ml-2 text-orange-400"></i>
             </button>
             <button 
                 @click="currentDay = '2'" 
                 :class="['flex-1 py-2 sm:py-3 rounded-xl font-bold text-base sm:text-lg transition-all transform active:scale-95 flex items-center justify-center', currentDay === '2' ? 'bg-white text-fuji-blue shadow-md' : 'bg-fuji-blue/50 text-white/80']">
                 <span>Day 2 (12/14)</span>
-                <i class="fas fa-cloud-sun ml-2 text-yellow-300"></i> <!-- Mock Weather -->
+                <i class="fas fa-cloud-sun ml-2 text-yellow-300"></i>
             </button>
+        </div>
+
+        <!-- New: Category Filter Scroll View -->
+        <div class="mt-4 -mb-2 overflow-x-auto no-scrollbar pb-2">
+            <div class="flex space-x-2 min-w-max px-1">
+                <button 
+                    v-for="tag in filterTags" 
+                    :key="tag.name"
+                    @click="currentTag = tag.name"
+                    :class="[
+                        'px-4 py-1.5 rounded-full text-sm font-bold flex items-center transition-all duration-200 border border-transparent whitespace-nowrap',
+                        currentTag === tag.name 
+                            ? 'bg-white text-fuji-blue shadow-md scale-105' 
+                            : 'bg-blue-800/30 text-blue-100 border-blue-400/30 hover:bg-blue-700/50'
+                    ]"
+                >
+                    <i :class="['fas mr-1.5 text-xs', tag.icon]"></i>
+                    {{ tag.name }}
+                </button>
+            </div>
         </div>
     </header>
 
@@ -104,15 +121,16 @@
         </div>
 
         <div v-else-if="filteredData.length === 0" class="text-center py-20 opacity-50">
-            <i class="fas fa-suitcase-rolling text-6xl text-gray-300 mb-4"></i>
-            <p class="text-xl text-gray-500">本日暫無行程</p>
+            <i class="fas fa-filter text-6xl text-gray-300 mb-4"></i>
+            <p class="text-xl text-gray-500">沒有符合「{{ currentTag }}」分類的行程</p>
+            <button @click="currentTag = '全部'" class="mt-4 text-fuji-blue font-bold underline">顯示全部</button>
         </div>
 
         <!-- Cards -->
         <div 
             v-for="item in filteredData" 
             :key="item.index" 
-            class="bg-white rounded-2xl overflow-hidden card-shadow relative group transition-all duration-300 w-full"
+            class="bg-white rounded-2xl overflow-hidden card-shadow relative group transition-all duration-300 w-full animate-fade-in-down"
         >
             <!-- Category Color Strip -->
             <div :class="['absolute left-0 top-0 bottom-0 w-2 sm:w-3', getCategoryColor(item.tag)]"></div>
@@ -121,7 +139,6 @@
                 <!-- Header: Tag & Edit -->
                 <div class="flex justify-between items-start mb-2">
                     <span :class="['text-sm font-bold px-3 py-1 rounded-full bg-opacity-10 text-opacity-100 flex items-center', getCategoryBadgeStyle(item.tag)]">
-                        <!-- Added 'fas' class to ensure icon renders -->
                         <i :class="['fas mr-1', getCategoryIcon(item.tag)]"></i> 
                         {{ item.tag || '未分類' }}
                     </span>
@@ -133,7 +150,7 @@
                 <!-- Title -->
                 <h2 class="text-2xl font-bold mb-2 text-gray-800 leading-snug">{{ item.activity }}</h2>
                 
-                <!-- Time: Added "預約:" prefix -->
+                <!-- Time -->
                 <div v-if="item.bookingTime" class="flex items-center text-fuji-blue font-bold text-lg mb-3 bg-blue-50 w-fit px-3 py-1 rounded-lg">
                     <i class="far fa-clock mr-2"></i>
                     預約: {{ item.bookingTime }}
@@ -165,14 +182,14 @@
                     </a>
                 </div>
 
-                <!-- Updated Notes Section Style -->
+                <!-- Notes Section -->
                 <div v-if="item.note" class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg mt-3">
                     <p class="text-gray-700 text-base leading-relaxed">
                         <i class="fas fa-info-circle text-yellow-500 mr-1"></i> {{ item.note }}
                     </p>
                 </div>
 
-                <!-- Toggle Details Button (For researched info only now) -->
+                <!-- Toggle Details Button -->
                 <button 
                     @click="toggleExpand(item.index)" 
                     class="w-full mt-3 flex items-center justify-center py-2 text-gray-400 hover:text-fuji-blue transition-colors border-t border-gray-100">
@@ -180,7 +197,7 @@
                     <i :class="['fas transition-transform duration-300', expandedItems.includes(item.index) ? 'fa-chevron-up' : 'fa-chevron-down']"></i>
                 </button>
 
-                <!-- Expanded Content (Web Info) -->
+                <!-- Expanded Content -->
                 <div v-if="expandedItems.includes(item.index)" class="pt-2 animate-fade-in-down">
                     <div class="bg-blue-50 rounded-xl p-4">
                         <h4 class="text-sm text-fuji-blue font-bold mb-2"><i class="fab fa-google mr-1"></i>網路上查到的資訊</h4>
@@ -210,9 +227,7 @@
 
     <!-- Edit/Add Modal -->
     <div v-if="isModalOpen" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <!-- Added max-h and overflow handling -->
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col modal-content relative">
-            
             <div class="p-6 pb-2 flex justify-between items-center sticky top-0 bg-white z-10 border-b border-gray-100">
                 <h3 class="text-2xl font-bold text-gray-800">{{ isEditing ? '編輯行程' : '新增行程' }}</h3>
                 <button @click="closeModal" class="text-gray-400 hover:text-gray-600 p-2 bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
@@ -290,6 +305,7 @@
             const scheduleData = ref([]);
             const loading = ref(true);
             const currentDay = ref('1');
+            const currentTag = ref('全部'); // New: Category Filter State
             const expandedItems = ref([]);
             const isModalOpen = ref(false);
             const isEditing = ref(false);
@@ -298,6 +314,17 @@
             // Google Sheet & Script Config
             const SHEET_ID = '1ldKQ9oYOyx5kpBsiuB46qh9hkpZexGk2tGp5GIHRBo4';
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzYmouRrBhVt8M-L5HcttVfKoAPdLahZAs4XoMmcRo_65-JvdxoM5LC1x_uuAZ1SUs/exec';
+
+            // Filter Definition
+            const filterTags = [
+                { name: '全部', icon: 'fa-list' },
+                { name: '景點', icon: 'fa-camera' },
+                { name: '食物', icon: 'fa-utensils' },
+                { name: '購物', icon: 'fa-shopping-bag' },
+                { name: '交通', icon: 'fa-train-subway' },
+                { name: '酒店', icon: 'fa-bed' },
+                { name: '活動', icon: 'fa-person-hiking' }
+            ];
 
             // Form State
             const form = ref({
@@ -310,34 +337,28 @@
                 note: ''
             });
 
-            // Fetch Data from Google Sheet using Gviz
+            // Fetch Data
             const fetchData = async () => {
                 loading.value = true;
                 try {
-                    // Use standard Gviz query to get JSON
                     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
                     const response = await fetch(url);
                     const text = await response.text();
-                    
-                    // Parse Gviz Response (Remove "/*O_o*/ google.visualization.Query.setResponse(...);")
                     const jsonString = text.substring(47).slice(0, -2);
                     const json = JSON.parse(jsonString);
                     
-                    // Map rows to clean objects
                     scheduleData.value = json.table.rows.map(row => {
                         const c = row.c;
                         return {
-                            index: c[0]?.v || '', // Hidden Index
+                            index: c[0]?.v || '',
                             day: c[1]?.v || 1,
                             activity: c[2]?.v || '',
                             tag: c[3]?.v || '',
-                            // Modified: Prefer formatted string 'f' if available, otherwise 'v', then empty
                             bookingTime: c[4]?.f || c[4]?.v || '', 
                             address: c[5]?.v || '',
                             note: c[6]?.v || ''
                         };
-                    }).filter(item => item.activity); // Filter empty rows
-
+                    }).filter(item => item.activity);
                 } catch (error) {
                     console.error('Error fetching data:', error);
                     alert('讀取行程失敗，請檢查網路連線。');
@@ -388,9 +409,13 @@
                 return keywords.some(k => (item.note || '').includes(k));
             };
 
-            // Computed
+            // Computed: Updated for Tag Filtering
             const filteredData = computed(() => {
-                return scheduleData.value.filter(item => String(item.day) === String(currentDay.value));
+                return scheduleData.value.filter(item => {
+                    const isDayMatch = String(item.day) === String(currentDay.value);
+                    const isTagMatch = currentTag.value === '全部' || item.tag === currentTag.value;
+                    return isDayMatch && isTagMatch;
+                });
             });
 
             // Actions
@@ -410,7 +435,7 @@
 
             const openEditModal = (item) => {
                 isEditing.value = true;
-                form.value = { ...item }; // Clone data
+                form.value = { ...item };
                 isModalOpen.value = true;
             };
 
@@ -420,8 +445,6 @@
 
             const submitForm = async () => {
                 submitting.value = true;
-                
-                // Construct URL Parameters
                 const params = new URLSearchParams({
                     index: form.value.index,
                     day: form.value.day,
@@ -433,26 +456,17 @@
                 });
 
                 try {
-                    // Send to Google Apps Script
-                    // Using no-cors because GAS exec URLs often have CORS issues on simple fetch in browser environments
-                    // However, 'no-cors' prevents reading the response.
-                    // For a robust app, jsonp or a proxy is better, but this fits the "Simple Web App" requirement.
                     await fetch(`${SCRIPT_URL}?${params.toString()}`, {
                         method: 'GET',
                         mode: 'no-cors',
                         headers: { 'Content-Type': 'application/json' }
                     });
-
-                    // Optimistic UI Update (Assume success)
-                    // If editing, update local array; if adding, verify on reload or push
-                    // To be safe, we reload data
                     setTimeout(async () => {
                         await fetchData();
                         closeModal();
                         submitting.value = false;
                         alert(isEditing.value ? '更新成功！' : '新增成功！');
-                    }, 1500); // Wait a bit for GAS to process
-
+                    }, 1500);
                 } catch (e) {
                     console.error(e);
                     alert('寫入發生錯誤，請稍後再試。');
@@ -460,7 +474,6 @@
                 }
             };
 
-            // Initialize
             onMounted(() => {
                 fetchData();
             });
@@ -470,6 +483,8 @@
                 filteredData,
                 loading,
                 currentDay,
+                currentTag,
+                filterTags,
                 expandedItems,
                 isModalOpen,
                 isEditing,
@@ -490,7 +505,6 @@
 </script>
 
 <style>
-/* Animations */
 @keyframes slide-up {
     from { transform: translateY(100%); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
@@ -510,4 +524,3 @@
 
 </body>
 </html>
-
