@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
@@ -22,6 +22,9 @@
 
     <!-- SortableJS (For Drag and Drop) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <!-- 🔹 引入外部設定檔 (請建立 config.js 並填入 Firebase 資訊) -->
+    <script src="config.js"></script>
 
     <script>
       tailwind.config = {
@@ -65,7 +68,8 @@
         scrollbar-width: none;
       }
       .card-shadow {
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1),
           0 2px 4px -1px rgba(0, 0, 0, 0.06);
       }
       /* Mobile safe area */
@@ -799,15 +803,25 @@
       const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
       // Firebase Init
-      const firebaseConfig = {
-        apiKey: "AIzaSyAFIJsMiLTcM1W7RvZ9xm9DJhBaT4aSyn4",
-        authDomain: "travel-6b530.firebaseapp.com",
-        projectId: "travel-6b530",
-        storageBucket: "travel-6b530.firebasestorage.app",
-        messagingSenderId: "631308723722",
-        appId: "1:631308723722:web:f6568da92693c14e3761f3",
-        measurementId: "G-K0FP6GBL0G",
-      };
+      // 智能設定切換：如果有預覽環境設定就用預覽的，否則用自訂的(來自config.js)
+      let firebaseConfig = window.firebaseConfig || {};
+
+      // 嘗試偵測預覽環境變數
+      try {
+        if (typeof __firebase_config !== "undefined") {
+          // console.log("Using Preview Environment Config");
+          firebaseConfig = JSON.parse(__firebase_config);
+        }
+      } catch (e) {
+        // console.log("Using Custom Config");
+      }
+
+      if (!firebaseConfig.apiKey) {
+        console.error(
+          "Firebase config missing. Make sure config.js is loaded.",
+        );
+      }
+
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
       const db = getFirestore(app);
@@ -829,7 +843,7 @@
           const currentTrip = ref(null);
           const currentDay = ref("1");
           const currentTag = ref("全部");
-          const tripFilter = ref("upcoming"); // 'upcoming' or 'all'
+          const tripFilter = ref("upcoming");
 
           // Modal States
           const isTripModalOpen = ref(false);
@@ -896,7 +910,7 @@
           const setupListeners = () => {
             // 1. Fetch Trips
             const qTrips = query(
-              collection(db, "artifacts", appId, "public", "data", "trips")
+              collection(db, "artifacts", appId, "public", "data", "trips"),
             );
             onSnapshot(qTrips, (snapshot) => {
               allTrips.value = snapshot.docs
@@ -912,8 +926,8 @@
                 appId,
                 "public",
                 "data",
-                "trip_schedule"
-              )
+                "trip_schedule",
+              ),
             );
             onSnapshot(qSchedules, (snapshot) => {
               allSchedules.value = snapshot.docs.map((doc) => ({
@@ -928,7 +942,7 @@
           const isTripExpired = (trip) => {
             if (!trip.endDate) return false;
             const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time part for accurate comparison
+            today.setHours(0, 0, 0, 0);
             const end = new Date(trip.endDate);
             return end < today;
           };
@@ -940,7 +954,6 @@
             if (tripFilter.value === "all") {
               return allTrips.value;
             } else {
-              // Show only trips that are NOT expired (today or future)
               return allTrips.value.filter((trip) => !isTripExpired(trip));
             }
           });
@@ -967,13 +980,10 @@
               return isDayMatch && isTagMatch;
             });
 
-            // Sort: Order (primary) -> BookingTime (secondary)
             return data.sort((a, b) => {
-              // If order exists, use it
               if (a.order !== undefined && b.order !== undefined) {
                 return a.order - b.order;
               }
-              // Fallback to bookingTime
               const timeA = a.bookingTime || "99:99";
               const timeB = b.bookingTime || "99:99";
               return timeA.localeCompare(timeB);
@@ -1013,14 +1023,13 @@
 
           // ============ SORTING LOGIC ============
 
-          // Init sortable when list is visible
           watch([filteredData, currentDay, currentTag], async () => {
             await nextTick();
             if (sortableList.value) {
               if (sortableInstance) sortableInstance.destroy();
 
               sortableInstance = new Sortable(sortableList.value, {
-                handle: ".handle", // Only drag via handle
+                handle: ".handle",
                 animation: 150,
                 ghostClass: "sortable-ghost",
                 dragClass: "sortable-drag",
@@ -1031,12 +1040,10 @@
 
                   if (newIndex === oldIndex) return;
 
-                  // Get new order of IDs from DOM
                   const newOrderIds = Array.from(
-                    sortableList.value.children
+                    sortableList.value.children,
                   ).map((el) => el.getAttribute("data-id"));
 
-                  // Batch update to Firestore
                   const batch = writeBatch(db);
                   newOrderIds.forEach((id, index) => {
                     if (!id) return;
@@ -1047,7 +1054,7 @@
                       "public",
                       "data",
                       "trip_schedule",
-                      id
+                      id,
                     );
                     batch.update(ref, { order: index });
                   });
@@ -1114,11 +1121,10 @@
                 appId,
                 "public",
                 "data",
-                "trips"
+                "trips",
               );
 
               if (isEditingTrip.value && tripForm.value.id) {
-                // Update
                 const docRef = doc(
                   db,
                   "artifacts",
@@ -1126,7 +1132,7 @@
                   "public",
                   "data",
                   "trips",
-                  tripForm.value.id
+                  tripForm.value.id,
                 );
                 await updateDoc(docRef, {
                   name: tripForm.value.name,
@@ -1135,7 +1141,6 @@
                   updatedAt: Date.now(),
                 });
               } else {
-                // Create
                 await addDoc(collectionRef, {
                   name: tripForm.value.name,
                   startDate: tripForm.value.startDate,
@@ -1155,13 +1160,13 @@
           const confirmDeleteTrip = async (trip) => {
             if (
               !confirm(
-                `確定要刪除「${trip.name}」嗎？裡面的行程也會一併刪除喔！`
+                `確定要刪除「${trip.name}」嗎？裡面的行程也會一併刪除喔！`,
               )
             )
               return;
             try {
               await deleteDoc(
-                doc(db, "artifacts", appId, "public", "data", "trips", trip.id)
+                doc(db, "artifacts", appId, "public", "data", "trips", trip.id),
               );
             } catch (e) {
               alert("刪除失敗");
@@ -1197,7 +1202,6 @@
             if (!user.value) return;
             submitting.value = true;
 
-            // Determine order for new item: put at end
             let newOrder = 0;
             if (!isEditing.value) {
               const currentItems = filteredData.value;
@@ -1230,7 +1234,7 @@
                 appId,
                 "public",
                 "data",
-                "trip_schedule"
+                "trip_schedule",
               );
 
               if (isEditing.value && form.value.id) {
@@ -1242,9 +1246,9 @@
                     "public",
                     "data",
                     "trip_schedule",
-                    form.value.id
+                    form.value.id,
                   ),
-                  payload
+                  payload,
                 );
               } else {
                 await addDoc(collectionRef, {
@@ -1275,8 +1279,8 @@
                   "public",
                   "data",
                   "trip_schedule",
-                  form.value.id
-                )
+                  form.value.id,
+                ),
               );
               closeModal();
             } catch (e) {
@@ -1315,7 +1319,7 @@
               景點: "bg-emerald-500",
               酒店: "bg-indigo-500",
               交通: "bg-slate-500",
-            }[tag] || "bg-gray-400");
+            })[tag] || "bg-gray-400";
           const getCategoryIcon = (tag) =>
             ({
               食物: "fa-utensils",
@@ -1324,7 +1328,7 @@
               景點: "fa-camera",
               酒店: "fa-bed",
               交通: "fa-train-subway",
-            }[tag] || "fa-map-marker-alt");
+            })[tag] || "fa-map-marker-alt";
           const getCategoryBadgeStyle = (tag) =>
             ({
               食物: "text-orange-600 bg-orange-600",
@@ -1333,10 +1337,10 @@
               景點: "text-emerald-600 bg-emerald-600",
               酒店: "text-indigo-600 bg-indigo-600",
               交通: "text-slate-600 bg-slate-600",
-            }[tag] || "text-gray-600 bg-gray-600");
+            })[tag] || "text-gray-600 bg-gray-600";
           const hasParkingInfo = (item) =>
             ["停車", "車位", "Parking", "P"].some((k) =>
-              (item.note || "").includes(k)
+              (item.note || "").includes(k),
             );
 
           return {
