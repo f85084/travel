@@ -67,3 +67,12 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+#---------------------------------
+
+#自訂忽略項目 (Custom Ignores)
+
+#---------------------------------
+
+#忽略含有 API Key 的設定檔
+
+config.js
