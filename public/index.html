@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta
-      name=""
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
     />
     <title>旅遊行程規劃</title>
 
@@ -112,72 +112,19 @@
       v-cloak
       class="w-full max-w-7xl mx-auto min-h-screen bg-fuji-grey/50 relative pb-24"
     >
-      <!-- Config 錯誤提示 -->
-      <div
-        v-if="configError"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 p-4"
-      >
-        <div class="bg-white rounded-2xl p-8 max-w-md text-center shadow-2xl">
-          <div class="text-6xl text-red-500 mb-4">
-            <i class="fas fa-file-code"></i>
-          </div>
-          <h2 class="text-2xl font-bold text-gray-800 mb-2">設定檔讀取失敗</h2>
-          <p class="text-gray-600 mb-6">
-            請確認 <code>config.js</code> 是否存在且內容正確。
-          </p>
-          <button
-            @click="retryLoad"
-            class="bg-fuji-blue text-white px-6 py-2 rounded-lg font-bold"
-          >
-            重新整理
-          </button>
-        </div>
-      </div>
-
-      <!-- 權限錯誤提示 (新增) -->
-      <div
-        v-if="permissionError"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/90 p-4"
-      >
-        <div class="bg-white rounded-2xl p-8 max-w-md text-center shadow-2xl">
-          <div class="text-6xl text-orange-500 mb-4">
-            <i class="fas fa-lock"></i>
-          </div>
-          <h2 class="text-2xl font-bold text-gray-800 mb-2">
-            權限不足 (Permission Denied)
-          </h2>
-          <div
-            class="text-gray-600 mb-6 text-left text-sm bg-gray-50 p-4 rounded-lg"
-          >
-            <p>Firebase 拒絕了資料讀取請求。請檢查以下兩點：</p>
-            <ol class="list-decimal pl-5 mt-2 space-y-1">
-              <li>
-                是否已在 Firebase Authentication 開啟
-                <b>匿名登入 (Anonymous)</b>？
-              </li>
-              <li>是否已在 Firestore Rules 開放 <b>讀寫權限</b>？</li>
-            </ol>
-          </div>
-          <button
-            @click="retryLoad"
-            class="bg-fuji-blue text-white px-6 py-2 rounded-lg font-bold"
-          >
-            我已修正，重新整理
-          </button>
-        </div>
-      </div>
-
       <!-- ================= VIEW 1: TRIP LIST (HOME) ================= -->
       <div v-if="!currentTrip && !configError && !permissionError">
         <!-- Header -->
         <header
-          class="bg-fuji-blue text-white p-6 rounded-b-[20px] shadow-lg sticky top-0 z-20 bg-opacity-95 transition-all"
+          class="bg-fuji-blue text-white p-4 sm:p-6 rounded-b-[20px] shadow-lg sticky top-0 z-20 bg-opacity-95 transition-all"
         >
-          <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-3 sm:gap-4">
             <div class="flex justify-between items-center">
               <div>
-                <h1 class="text-3xl font-bold tracking-wider">我的旅程</h1>
-                <p class="text-blue-100 mt-1">
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-wider">
+                  我的旅程
+                </h1>
+                <p class="text-blue-100 mt-1 text-xs sm:text-sm">
                   <i class="fas fa-suitcase-rolling mr-2"></i>選擇或建立一個行程
                 </p>
               </div>
@@ -202,7 +149,7 @@
         </header>
 
         <!-- Trip Cards Grid -->
-        <main class="p-4 space-y-4">
+        <main class="p-3 sm:p-4 space-y-3 sm:space-y-4">
           <div v-if="loading" class="text-center py-20">
             <i
               class="fas fa-circle-notch fa-spin text-4xl text-fuji-blue mb-4"
@@ -250,91 +197,124 @@
           <div
             v-for="trip in filteredTripsList"
             :key="trip.id"
-            @click="selectTrip(trip)"
             :class="[
-                    'rounded-2xl p-5 card-shadow cursor-pointer relative group transition-all duration-200 hover:shadow-lg transform active:scale-[0.99] overflow-hidden',
+                    'rounded-2xl overflow-hidden card-shadow cursor-pointer relative group transition-all duration-200 hover:shadow-lg transform active:scale-[0.99]',
                     isTripExpired(trip) ? 'bg-gray-50 border border-gray-200 grayscale-[0.5]' : 'bg-gradient-to-br from-white to-blue-50 border border-blue-100'
                 ]"
           >
-            <!-- Decorative Background Icon (Faint) -->
-            <div
-              class="absolute -right-6 -bottom-6 text-9xl text-fuji-blue opacity-[0.05] transform -rotate-12 pointer-events-none transition-transform group-hover:scale-110 group-hover:opacity-[0.08]"
-            >
-              <i class="fas fa-plane-departure"></i>
-            </div>
-
-            <!-- Expired Badge -->
-            <div
-              v-if="isTripExpired(trip)"
-              class="absolute top-0 right-0 bg-gray-200 text-gray-500 text-xs font-bold px-3 py-1 rounded-bl-xl z-20"
-            >
-              已結束
-            </div>
-
-            <!-- Title Row -->
-            <div class="flex justify-between items-start mb-4 relative z-10">
-              <div class="flex items-center min-w-0 flex-1 mr-2">
-                <!-- Decorative Blue Bar (Gray if expired) -->
-                <div
-                  :class="['w-1.5 h-7 rounded-full mr-3 flex-shrink-0 shadow-sm', isTripExpired(trip) ? 'bg-gray-400' : 'bg-fuji-blue']"
-                ></div>
-                <h2
-                  class="text-2xl font-bold text-gray-800 line-clamp-1 tracking-tight"
-                >
-                  {{ trip.name }}
-                </h2>
-              </div>
-              <div class="flex space-x-1 flex-shrink-0">
-                <button
-                  @click.stop="openEditTripModal(trip)"
-                  class="text-gray-400 hover:text-fuji-blue p-2 bg-white/50 rounded-full hover:bg-white transition-colors"
-                >
-                  <i class="fas fa-pen text-lg"></i>
-                </button>
-                <button
-                  @click.stop="confirmDeleteTrip(trip)"
-                  class="text-gray-300 hover:text-red-400 p-2 -mr-2 bg-white/50 rounded-full hover:bg-white transition-colors"
-                >
-                  <i class="fas fa-trash-alt text-lg"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Info & Button Row -->
-            <div
-              class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 relative z-10"
-            >
-              <!-- Date & Duration Box -->
+            <!-- Flex Container: Image (left) + Content (right) -->
+            <div class="flex flex-col lg:flex-row">
+              <!-- Image Section (Left on desktop, top on mobile) -->
               <div
-                class="bg-white/80 backdrop-blur-sm p-3 rounded-xl border border-blue-100/50 shadow-sm w-full sm:w-auto"
+                v-if="getTripImageUrl(trip)"
+                class="relative lg:w-3/5 bg-gray-100 overflow-hidden flex items-center justify-center cursor-zoom-in"
+                @click.stop="openImageModal(getTripImageUrl(trip))"
               >
-                <div class="flex items-center text-gray-600 font-bold mb-1">
-                  <i
-                    :class="['far fa-calendar-alt mr-2', isTripExpired(trip) ? 'text-gray-400' : 'text-fuji-blue']"
-                  ></i>
-                  <span class="text-lg"
-                    >{{ formatDate(trip.startDate) }} - {{
-                    formatDate(trip.endDate) }}</span
-                  >
-                </div>
-                <div class="flex items-center">
-                  <span
-                    :class="['text-xs font-bold px-2 py-0.5 rounded-md', isTripExpired(trip) ? 'text-gray-500 bg-gray-200' : 'text-fuji-blue bg-blue-100']"
-                  >
-                    共 {{ calculateDuration(trip.startDate, trip.endDate) }} 天
-                  </span>
+                <img
+                  :src="getTripImageUrl(trip)"
+                  alt="trip map"
+                  class="w-full h-64 lg:h-full object-contain hover:scale-105 transition-transform"
+                />
+                <div
+                  class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"
+                ></div>
+                <!-- Zoom Icon -->
+                <div
+                  class="absolute top-3 right-3 bg-white/80 backdrop-blur-sm rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <i class="fas fa-search-plus text-fuji-blue text-lg"></i>
                 </div>
               </div>
 
-              <!-- Enter Button -->
-              <button
-                :class="['px-6 py-3 rounded-xl font-bold shadow-md active:bg-blue-800 transition-all flex items-center justify-center w-full sm:w-auto group-hover:scale-105', isTripExpired(trip) ? 'bg-gray-400 text-white' : 'bg-fuji-blue text-white']"
+              <!-- Content Section (Right on desktop, bottom on mobile) -->
+              <div
+                class="flex-1 p-3 sm:p-5 relative z-10 flex flex-col justify-between"
+                @click="selectTrip(trip)"
               >
-                {{ isTripExpired(trip) ? '回顧行程' : '進入行程' }}
-                <i
-                  class="fas fa-arrow-right ml-2 text-sm transition-transform group-hover:translate-x-1"
-                ></i>
-              </button>
+                <!-- Decorative Background Icon (Faint) -->
+                <div
+                  class="absolute -right-6 -bottom-6 text-9xl text-fuji-blue opacity-[0.05] transform -rotate-12 pointer-events-none transition-transform group-hover:scale-110 group-hover:opacity-[0.08]"
+                >
+                  <i class="fas fa-plane-departure"></i>
+                </div>
+
+                <!-- Expired Badge -->
+                <div
+                  v-if="isTripExpired(trip)"
+                  class="absolute top-0 right-0 bg-gray-200 text-gray-500 text-xs font-bold px-3 py-1 rounded-bl-xl z-20"
+                >
+                  已結束
+                </div>
+
+                <!-- Title Row -->
+                <div
+                  class="flex justify-between items-start mb-4 relative z-10"
+                >
+                  <div class="flex items-center min-w-0 flex-1 mr-2">
+                    <!-- Decorative Blue Bar (Gray if expired) -->
+                    <div
+                      :class="['w-1 sm:w-1.5 h-6 sm:h-7 rounded-full mr-2 sm:mr-3 flex-shrink-0 shadow-sm', isTripExpired(trip) ? 'bg-gray-400' : 'bg-fuji-blue']"
+                    ></div>
+                    <h2
+                      class="text-lg sm:text-2xl font-bold text-gray-800 line-clamp-1 tracking-tight"
+                    >
+                      {{ trip.name }}
+                    </h2>
+                  </div>
+                  <div class="flex space-x-1 flex-shrink-0">
+                    <button
+                      @click.stop="openEditTripModal(trip)"
+                      class="text-gray-400 hover:text-fuji-blue p-1.5 sm:p-2 bg-white/50 rounded-full hover:bg-white transition-colors"
+                    >
+                      <i class="fas fa-pen text-sm sm:text-lg"></i>
+                    </button>
+                    <button
+                      @click.stop="confirmDeleteTrip(trip)"
+                      class="text-gray-300 hover:text-red-400 p-1.5 sm:p-2 -mr-2 bg-white/50 rounded-full hover:bg-white transition-colors"
+                    >
+                      <i class="fas fa-trash-alt text-sm sm:text-lg"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Info & Button Row -->
+                <div
+                  class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 sm:gap-3 relative z-10"
+                >
+                  <!-- Date & Duration Box -->
+                  <div
+                    class="bg-white/80 backdrop-blur-sm p-2 sm:p-3 rounded-xl border border-blue-100/50 shadow-sm w-full sm:w-auto text-sm sm:text-base"
+                  >
+                    <div class="flex items-center text-gray-600 font-bold mb-1">
+                      <i
+                        :class="['far fa-calendar-alt mr-1 sm:mr-2 text-sm sm:text-base', isTripExpired(trip) ? 'text-gray-400' : 'text-fuji-blue']"
+                      ></i>
+                      <span class="text-xs sm:text-lg"
+                        >{{ formatDate(trip.startDate) }} - {{
+                        formatDate(trip.endDate) }}</span
+                      >
+                    </div>
+                    <div class="flex items-center">
+                      <span
+                        :class="['text-xs font-bold px-2 py-0.5 rounded-md', isTripExpired(trip) ? 'text-gray-500 bg-gray-200' : 'text-fuji-blue bg-blue-100']"
+                      >
+                        共 {{ calculateDuration(trip.startDate, trip.endDate) }}
+                        天
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Enter Button -->
+                  <button
+                    :class="['px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold shadow-md active:bg-blue-800 transition-all flex items-center justify-center w-full sm:w-auto group-hover:scale-105 text-sm sm:text-base', isTripExpired(trip) ? 'bg-gray-400 text-white' : 'bg-fuji-blue text-white']"
+                  >
+                    {{ isTripExpired(trip) ? '回顧行程' : '進入行程' }}
+                    <i
+                      class="fas fa-arrow-right ml-1 sm:ml-2 text-xs sm:text-sm transition-transform group-hover:translate-x-1"
+                    ></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </main>
@@ -397,22 +377,58 @@
             </button>
           </div>
 
-          <!-- Category Filter -->
-          <div class="mt-2 overflow-x-auto no-scrollbar pb-2">
-            <div class="flex space-x-2 min-w-max px-1">
+          <!-- Category Filter with Toggle Button -->
+          <div class="mt-2 flex items-center gap-2">
+            <div class="overflow-x-auto no-scrollbar pb-2 flex-1">
+              <div class="flex space-x-2 min-w-max px-1">
+                <button
+                  v-for="tag in filterTags"
+                  :key="tag.name"
+                  @click="currentTag = tag.name"
+                  :class="[
+                              'px-4 py-1.5 rounded-full text-sm font-bold flex items-center transition-all duration-200 border border-transparent whitespace-nowrap',
+                              currentTag === tag.name 
+                                  ? 'bg-white text-fuji-blue shadow-md scale-105' 
+                                  : 'bg-blue-800/30 text-blue-100 border-blue-400/30 hover:bg-blue-700/50'
+                          ]"
+                >
+                  <i :class="['fas mr-1.5 text-xs', tag.icon]"></i>
+                  {{ tag.name }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Show/Hide Toggle Button -->
+            <button
+              v-if="getTripImageUrl(currentTrip)"
+              @click="showTripImage = !showTripImage"
+              class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors flex-shrink-0"
+            >
+              <i
+                :class="['fas', showTripImage ? 'fa-chevron-up' : 'fa-chevron-down']"
+              ></i>
+            </button>
+          </div>
+
+          <!-- Trip Image -->
+          <div
+            v-if="getTripImageUrl(currentTrip)"
+            class="mt-3 -mx-4 -mb-6 sm:-mx-6"
+          >
+            <!-- Image Container -->
+            <div
+              v-if="showTripImage"
+              class="bg-gray-100 flex items-center justify-center h-72 rounded-b-2xl overflow-hidden"
+            >
               <button
-                v-for="tag in filterTags"
-                :key="tag.name"
-                @click="currentTag = tag.name"
-                :class="[
-                            'px-4 py-1.5 rounded-full text-sm font-bold flex items-center transition-all duration-200 border border-transparent whitespace-nowrap',
-                            currentTag === tag.name 
-                                ? 'bg-white text-fuji-blue shadow-md scale-105' 
-                                : 'bg-blue-800/30 text-blue-100 border-blue-400/30 hover:bg-blue-700/50'
-                        ]"
+                @click="openImageModal(getTripImageUrl(currentTrip))"
+                class="w-full h-full flex items-center justify-center hover:bg-gray-200 transition-colors"
               >
-                <i :class="['fas mr-1.5 text-xs', tag.icon]"></i>
-                {{ tag.name }}
+                <img
+                  :src="getTripImageUrl(currentTrip)"
+                  alt="trip map"
+                  class="w-full h-full object-contain"
+                />
               </button>
             </div>
           </div>
@@ -421,7 +437,7 @@
         <!-- Main Content -->
         <main class="p-2 sm:p-4 space-y-4">
           <div
-            v-if="filteredData.length === 0"
+            v-if="filteredData.length === 0 && false"
             class="text-center py-20 opacity-50"
           >
             <i class="fas fa-map text-6xl text-gray-300 mb-4"></i>
@@ -443,15 +459,15 @@
               v-for="item in filteredData"
               :key="item.id"
               :data-id="item.id"
-              class="bg-white rounded-2xl overflow-hidden card-shadow relative group transition-all duration-300 w-full flex"
+              class="bg-white rounded-2xl overflow-hidden card-shadow relative group transition-all duration-300 w-full flex flex-col"
             >
               <!-- Category Color Strip -->
               <div
-                :class="['w-2 sm:w-2 flex-shrink-0', getCategoryColor(item.tag)]"
+                :class="['w-2 sm:w-2 flex-shrink-0 absolute top-0 bottom-0', getCategoryColor(item.tag)]"
               ></div>
 
               <!-- Card Content -->
-              <div class="p-4 sm:p-5 flex-1 min-w-0">
+              <div class="p-4 sm:p-5 flex-1 min-w-0 ml-2">
                 <!-- Header: Tag & Edit -->
                 <div class="flex justify-between items-start mb-2">
                   <span
@@ -466,6 +482,16 @@
                   >
                     <i class="fas fa-pen text-lg"></i>
                   </button>
+                </div>
+
+                <!-- Image Section (After Tag) -->
+                <div
+                  class="w-full bg-gradient-to-b from-red-200 to-red-100 rounded-lg h-40 mb-3 flex items-center justify-center relative border-2 border-red-400"
+                >
+                  <div class="text-center">
+                    <p class="text-red-600 font-bold text-lg">圖片區域</p>
+                    <p class="text-red-500 text-sm">Test Display</p>
+                  </div>
                 </div>
 
                 <!-- Title -->
@@ -614,6 +640,30 @@
         </button>
       </div>
 
+      <!-- ================= MODAL: IMAGE LIGHTBOX (ZOOM) ================= -->
+      <div
+        v-if="imageModalUrl"
+        class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 overflow-hidden"
+        @click="imageModalUrl = null"
+      >
+        <div
+          class="relative max-w-5xl max-h-[90vh] w-full h-full overflow-auto touch-manipulation"
+        >
+          <img
+            :src="imageModalUrl"
+            alt="enlarged trip map"
+            class="w-full h-full object-contain select-none"
+            style="touch-action: manipulation"
+          />
+          <button
+            @click.stop="imageModalUrl = null"
+            class="absolute top-4 right-4 bg-white text-black rounded-full p-3 hover:bg-gray-200 transition-colors z-10"
+          >
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- ================= MODAL: TRIP (ADD/EDIT TRIP) ================= -->
       <div
         v-if="isTripModalOpen"
@@ -679,6 +729,45 @@
                       class="w-full bg-white border border-gray-200 rounded-lg p-3 text-base focus:outline-none focus:ring-2 focus:ring-fuji-blue"
                     />
                   </div>
+                </div>
+              </div>
+
+              <!-- Image Upload -->
+              <div>
+                <label class="block text-base font-bold text-gray-600 mb-2">
+                  <i class="fas fa-image mr-1 text-fuji-blue"></i>路線圖/景點圖
+                </label>
+                <div class="space-y-3">
+                  <!-- Image Preview -->
+                  <div
+                    v-if="tripForm.imageUrl || tripForm.imageBase64"
+                    class="relative w-full bg-gray-100 rounded-xl overflow-hidden border border-gray-200"
+                  >
+                    <img
+                      :src="tripForm.imageUrl || tripForm.imageBase64"
+                      alt="trip preview"
+                      class="w-full object-contain max-h-96"
+                    />
+                    <button
+                      type="button"
+                      @click="tripForm.imageUrl = ''; tripForm.imageBase64 = ''; tripForm.imageFile = null"
+                      class="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
+                    >
+                      <i class="fas fa-times text-sm"></i>
+                    </button>
+                  </div>
+
+                  <!-- File Input -->
+                  <input
+                    type="file"
+                    accept="image/*"
+                    @change="handleImageUpload"
+                    class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-base focus:outline-none focus:ring-2 focus:ring-fuji-blue file:bg-fuji-blue file:text-white file:px-4 file:py-2 file:rounded-lg file:border-0 file:cursor-pointer"
+                  />
+                  <p class="text-xs text-gray-500">
+                    <i class="fas fa-info-circle mr-1"></i>建議使用 AI
+                    生成的路線圖，支援 JPG、PNG（最大 5MB）
+                  </p>
                 </div>
               </div>
             </form>
@@ -847,70 +936,6 @@
           </div>
         </div>
       </div>
-
-      <!-- ================= MODAL: ALERT ================= -->
-      <div
-        v-if="alertModal.show"
-        class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      >
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-          <div
-            :class="[
-              'text-5xl mb-4',
-              alertModal.type === 'error'
-                ? 'text-red-500'
-                : alertModal.type === 'success'
-                  ? 'text-green-500'
-                  : 'text-blue-500',
-            ]"
-          >
-            <i
-              :class="[
-                'fas',
-                alertModal.type === 'error'
-                  ? 'fa-exclamation-circle'
-                  : alertModal.type === 'success'
-                    ? 'fa-check-circle'
-                    : 'fa-info-circle',
-              ]"
-            ></i>
-          </div>
-          <p class="text-gray-800 text-lg mb-6">{{ alertModal.message }}</p>
-          <button
-            @click="closeAlert"
-            class="w-full bg-fuji-blue text-white font-bold py-2.5 rounded-xl"
-          >
-            確定
-          </button>
-        </div>
-      </div>
-
-      <!-- ================= MODAL: CONFIRM ================= -->
-      <div
-        v-if="confirmModal.show"
-        class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-      >
-        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-          <div class="text-5xl text-orange-500 mb-4">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <p class="text-gray-800 text-lg mb-6">{{ confirmModal.message }}</p>
-          <div class="flex gap-3">
-            <button
-              @click="cancelConfirm"
-              class="flex-1 bg-gray-200 text-gray-800 font-bold py-2.5 rounded-xl hover:bg-gray-300"
-            >
-              取消
-            </button>
-            <button
-              @click="confirmDelete"
-              class="flex-1 bg-red-500 text-white font-bold py-2.5 rounded-xl hover:bg-red-600"
-            >
-              確認刪除
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Firebase Logic -->
@@ -920,22 +945,25 @@
         getAuth,
         signInAnonymously,
         onAuthStateChanged,
-        signInWithCustomToken,
       } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
       import {
         getFirestore,
         collection,
-        addDoc,
         setDoc,
         updateDoc,
         deleteDoc,
         doc,
         onSnapshot,
         query,
-        orderBy,
-        where,
         writeBatch,
       } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      import {
+        getStorage,
+        ref as storageRef,
+        uploadBytes,
+        getDownloadURL,
+        deleteObject,
+      } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
       const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
@@ -944,7 +972,7 @@
           // ============ CONFIG INIT ============
           const configError = ref(false);
           const permissionError = ref(false);
-          let app, auth, db;
+          let app, auth, db, storage;
           let appId = "my-trip-app";
 
           // 嘗試載入設定
@@ -970,6 +998,7 @@
               app = initializeApp(firebaseConfig);
               auth = getAuth(app);
               db = getFirestore(app);
+              storage = getStorage(app);
             } catch (e) {
               console.error("Firebase init failed:", e);
               configError.value = true;
@@ -990,6 +1019,7 @@
           const currentDay = ref("1");
           const currentTag = ref("全部");
           const tripFilter = ref("upcoming");
+          const showScheduleImages = ref({});
 
           // Modal States
           const isTripModalOpen = ref(false);
@@ -997,8 +1027,8 @@
           const isModalOpen = ref(false);
           const isEditing = ref(false);
           const expandedItems = ref([]);
-          const alertModal = ref({ show: false, message: "", type: "info" });
-          const confirmModal = ref({ show: false, message: "", resolve: null });
+          const imageModalUrl = ref(null);
+          const showTripImage = ref(true);
 
           // Sortable
           const sortableList = ref(null);
@@ -1010,6 +1040,8 @@
             name: "",
             startDate: "",
             endDate: "",
+            imageUrl: "",
+            imageFile: null,
           });
           const form = ref({
             id: null,
@@ -1039,14 +1071,7 @@
             loading.value = true;
             const initAuth = async () => {
               try {
-                if (
-                  typeof __initial_auth_token !== "undefined" &&
-                  __initial_auth_token
-                ) {
-                  await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                  await signInAnonymously(auth);
-                }
+                await signInAnonymously(auth);
               } catch (error) {
                 console.error("Auth Error:", error);
                 // 讓使用者知道網路連線或設定可能有問題，但不讓 Vue 崩潰
@@ -1108,34 +1133,31 @@
           // ============ HELPERS & COMPUTED ============
           const retryLoad = () => window.location.reload();
 
-          // 提示函數
+          // Element Plus 提示函數
           const showAlert = (message, type = "info") => {
-            alertModal.value = { show: true, message, type };
-          };
-
-          // 確認對話框
-          const showConfirm = (message) => {
-            return new Promise((resolve) => {
-              confirmModal.value = { show: true, message, resolve };
+            const { ElMessage } = window.ElementPlus;
+            ElMessage({
+              message,
+              type:
+                type === "error"
+                  ? "error"
+                  : type === "success"
+                    ? "success"
+                    : "info",
             });
           };
 
-          const closeAlert = () => {
-            alertModal.value.show = false;
-          };
-
-          const confirmDelete = () => {
-            if (confirmModal.value.resolve) {
-              confirmModal.value.resolve(true);
-            }
-            confirmModal.value.show = false;
-          };
-
-          const cancelConfirm = () => {
-            if (confirmModal.value.resolve) {
-              confirmModal.value.resolve(false);
-            }
-            confirmModal.value.show = false;
+          // Element Plus 確認對話框
+          const showConfirm = (message) => {
+            const { ElMessageBox } = window.ElementPlus;
+            return ElMessageBox.confirm(message, "確認", {
+              confirmButtonText: "確認刪除",
+              cancelButtonText: "取消",
+              type: "warning",
+            }).then(
+              () => true,
+              () => false,
+            );
           };
 
           const isTripExpired = (trip) => {
@@ -1145,6 +1167,10 @@
             const end = new Date(trip.endDate);
             return end < today;
           };
+
+          // 相容舊資料：優先使用 imageUrl，如果沒有則使用 imageBase64
+          const getTripImageUrl = (trip) =>
+            trip.imageUrl || trip.imageBase64 || null;
 
           const filteredTripsList = computed(() => {
             if (tripFilter.value === "all") {
@@ -1189,11 +1215,7 @@
               !currentTrip.value.startDate ||
               !currentTrip.value.endDate
             ) {
-              return [
-                { num: 1, dateDisplay: "Day 1" },
-                { num: 2, dateDisplay: "Day 2" },
-                { num: 3, dateDisplay: "Day 3" },
-              ];
+              return [];
             }
             const start = new Date(currentTrip.value.startDate);
             const end = new Date(currentTrip.value.endDate);
@@ -1204,7 +1226,6 @@
               days.push({
                 num: dayNum,
                 dateDisplay: `${current.getMonth() + 1}/${current.getDate()}`,
-                fullDate: current.toISOString().split("T")[0],
               });
               current.setDate(current.getDate() + 1);
               dayNum++;
@@ -1262,38 +1283,137 @@
 
           const openTripModal = () => {
             isEditingTrip.value = false;
-            tripForm.value = { id: null, name: "", startDate: "", endDate: "" };
+            tripForm.value = {
+              id: null,
+              name: "",
+              startDate: "",
+              endDate: "",
+              imageUrl: "",
+              imageBase64: "",
+              imageFile: null,
+            };
             isTripModalOpen.value = true;
           };
           const openEditTripModal = (trip) => {
             isEditingTrip.value = true;
-            tripForm.value = { ...trip };
+            // 相容舊資料：保留 imageBase64 如果存在
+            tripForm.value = {
+              ...trip,
+              imageUrl: trip.imageUrl || "",
+              imageBase64: trip.imageBase64 || "",
+              imageFile: null,
+            };
             isTripModalOpen.value = true;
           };
           const closeTripModal = () => (isTripModalOpen.value = false);
+
+          const openImageModal = (url) => {
+            imageModalUrl.value = url;
+          };
+
+          const handleImageUpload = (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            // Check file size (limit to 5MB)
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+              showAlert("圖片大小不能超過 5MB", "error");
+              return;
+            }
+
+            tripForm.value.imageFile = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              tripForm.value.imageUrl = e.target?.result || "";
+            };
+            reader.readAsDataURL(file);
+          };
+
+          const handleScheduleImageUpload = (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            // Check file size (limit to 5MB)
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+              showAlert("圖片大小不能超過 5MB", "error");
+              return;
+            }
+
+            form.value.imageFile = file;
+
+            // Convert to Base64
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              form.value.imageUrl = e.target?.result || "";
+            };
+            reader.readAsDataURL(file);
+          };
 
           const submitTrip = async () => {
             if (!user.value) return;
             submitting.value = true;
             try {
+              // 暫時改用 Base64 方式存儲圖片（相容舊資料）
+              let imageBase64 = tripForm.value.imageBase64 || "";
+              let imageUrl = tripForm.value.imageUrl || "";
+
+              // 如果選擇了新檔案，將其轉換為 Base64 存儲（先暫用此方案規避 CORS 問題）
+              if (
+                tripForm.value.imageFile &&
+                tripForm.value.imageFile instanceof File
+              ) {
+                try {
+                  const reader = new FileReader();
+                  await new Promise((resolve, reject) => {
+                    reader.onload = () => {
+                      imageBase64 = reader.result;
+                      imageUrl = ""; // 清除 imageUrl，使用 imageBase64
+                      resolve();
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(tripForm.value.imageFile);
+                  });
+                } catch (error) {
+                  console.error("Image conversion error:", error);
+                  showAlert("圖片轉換失敗", "error");
+                  submitting.value = false;
+                  return;
+                }
+              }
+
               if (isEditingTrip.value && tripForm.value.id) {
                 // 編輯現有行程
                 const docRef = doc(db, "travel", tripForm.value.id);
+
                 await updateDoc(docRef, {
-                  ...tripForm.value,
+                  name: tripForm.value.name,
+                  startDate: tripForm.value.startDate,
+                  endDate: tripForm.value.endDate,
+                  imageUrl: imageUrl,
+                  imageBase64: imageBase64,
                   updatedAt: Date.now(),
                 });
               } else {
                 // 新增行程 - 用序號作為 ID
                 const newId = String(allTrips.value.length + 1);
                 await setDoc(doc(db, "travel", newId), {
-                  ...tripForm.value,
                   id: newId,
+                  name: tripForm.value.name,
+                  startDate: tripForm.value.startDate,
+                  endDate: tripForm.value.endDate,
+                  imageUrl: imageUrl,
+                  imageBase64: imageBase64,
                   createdAt: Date.now(),
                 });
               }
               closeTripModal();
+              showAlert("保存成功！", "success");
             } catch (e) {
+              console.error("Save error:", e);
               showAlert("儲存失敗", "error");
             } finally {
               submitting.value = false;
@@ -1321,6 +1441,17 @@
 
               // 一次性提交所有刪除操作
               await batch.commit();
+
+              // Delete image from Storage if exists
+              if (trip.imageUrl) {
+                try {
+                  const imageRef = storageRef(
+                    storage,
+                    `trip-images/${trip.id}`,
+                  );
+                  await deleteObject(imageRef).catch(() => {});
+                } catch (e) {}
+              }
             } catch (e) {
               showAlert("刪除失敗", "error");
             }
@@ -1357,6 +1488,7 @@
                   ? Math.max(...currentItems.map((i) => i.order || 0)) + 1
                   : 0;
             }
+
             const payload = {
               ...form.value,
               day: String(form.value.day),
@@ -1422,33 +1554,45 @@
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
           };
 
+          const categoryMap = {
+            食物: {
+              color: "bg-orange-400",
+              icon: "fa-utensils",
+              badge: "text-orange-600 bg-orange-600",
+            },
+            活動: {
+              color: "bg-sky-500",
+              icon: "fa-person-hiking",
+              badge: "text-sky-600 bg-sky-600",
+            },
+            購物: {
+              color: "bg-pink-400",
+              icon: "fa-shopping-bag",
+              badge: "text-pink-600 bg-pink-600",
+            },
+            景點: {
+              color: "bg-emerald-500",
+              icon: "fa-camera",
+              badge: "text-emerald-600 bg-emerald-600",
+            },
+            酒店: {
+              color: "bg-indigo-500",
+              icon: "fa-bed",
+              badge: "text-indigo-600 bg-indigo-600",
+            },
+            交通: {
+              color: "bg-slate-500",
+              icon: "fa-train-subway",
+              badge: "text-slate-600 bg-slate-600",
+            },
+          };
+
           const getCategoryColor = (tag) =>
-            ({
-              食物: "bg-orange-400",
-              活動: "bg-sky-500",
-              購物: "bg-pink-400",
-              景點: "bg-emerald-500",
-              酒店: "bg-indigo-500",
-              交通: "bg-slate-500",
-            })[tag] || "bg-gray-400";
+            categoryMap[tag]?.color || "bg-gray-400";
           const getCategoryIcon = (tag) =>
-            ({
-              食物: "fa-utensils",
-              活動: "fa-person-hiking",
-              購物: "fa-shopping-bag",
-              景點: "fa-camera",
-              酒店: "fa-bed",
-              交通: "fa-train-subway",
-            })[tag] || "fa-map-marker-alt";
+            categoryMap[tag]?.icon || "fa-map-marker-alt";
           const getCategoryBadgeStyle = (tag) =>
-            ({
-              食物: "text-orange-600 bg-orange-600",
-              活動: "text-sky-600 bg-sky-600",
-              購物: "text-pink-600 bg-pink-600",
-              景點: "text-emerald-600 bg-emerald-600",
-              酒店: "text-indigo-600 bg-indigo-600",
-              交通: "text-slate-600 bg-slate-600",
-            })[tag] || "text-gray-600 bg-gray-600";
+            categoryMap[tag]?.badge || "text-gray-600 bg-gray-600";
           const hasParkingInfo = (item) =>
             ["停車", "車位", "Parking", "P"].some((k) =>
               (item.note || "").includes(k),
@@ -1474,20 +1618,24 @@
             isModalOpen,
             isEditing,
             expandedItems,
-            alertModal,
-            confirmModal,
+            imageModalUrl,
+            showScheduleImages,
             tripForm,
             form,
             sortableList,
             tripFilter,
             filteredTripsList,
             isTripExpired,
+            getTripImageUrl,
+            showTripImage,
             selectTrip,
             selectLegacyTrip,
             confirmDeleteTrip,
             openTripModal,
             openEditTripModal,
             closeTripModal,
+            openImageModal,
+            handleImageUpload,
             submitTrip,
             openAddModal,
             openEditModal,
@@ -1501,10 +1649,6 @@
             getCategoryIcon,
             getCategoryBadgeStyle,
             hasParkingInfo,
-            showAlert,
-            closeAlert,
-            confirmDelete,
-            cancelConfirm,
           };
         },
       }).mount("#app");
