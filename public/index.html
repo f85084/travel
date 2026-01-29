@@ -228,7 +228,7 @@
 
               <!-- Content Section (Right on desktop, bottom on mobile) -->
               <div
-                class="flex-1 p-3 sm:p-5 relative z-10 flex flex-col justify-between"
+                class="flex-1 p-3 sm:p-5 relative z-10 flex flex-col gap-2"
                 @click="selectTrip(trip)"
               >
                 <!-- Decorative Background Icon (Faint) -->
@@ -247,9 +247,7 @@
                 </div>
 
                 <!-- Title Row -->
-                <div
-                  class="flex justify-between items-start mb-4 relative z-10"
-                >
+                <div class="flex justify-between items-start relative z-10">
                   <div class="flex items-center min-w-0 flex-1 mr-2">
                     <!-- Decorative Blue Bar (Gray if expired) -->
                     <div
@@ -279,11 +277,11 @@
 
                 <!-- Info & Button Row -->
                 <div
-                  class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 sm:gap-3 relative z-10"
+                  class="flex flex-col gap-2 sm:gap-3 relative z-10 justify-center"
                 >
-                  <!-- Date & Duration Box -->
+                  <!-- Date & Duration Box (Row 2) -->
                   <div
-                    class="bg-white/80 backdrop-blur-sm p-2 sm:p-3 rounded-xl border border-blue-100/50 shadow-sm w-full sm:w-auto text-sm sm:text-base"
+                    class="bg-white/80 backdrop-blur-sm p-2 sm:p-3 rounded-xl border border-blue-100/50 shadow-sm text-sm sm:text-base w-full"
                   >
                     <div class="flex items-center text-gray-600 font-bold mb-1">
                       <i
@@ -304,15 +302,31 @@
                     </div>
                   </div>
 
-                  <!-- Enter Button -->
-                  <button
-                    :class="['px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold shadow-md active:bg-blue-800 transition-all flex items-center justify-center w-full sm:w-auto group-hover:scale-105 text-sm sm:text-base', isTripExpired(trip) ? 'bg-gray-400 text-white' : 'bg-fuji-blue text-white']"
-                  >
-                    {{ isTripExpired(trip) ? '回顧行程' : '進入行程' }}
-                    <i
-                      class="fas fa-arrow-right ml-1 sm:ml-2 text-xs sm:text-sm transition-transform group-hover:translate-x-1"
-                    ></i>
-                  </button>
+                  <!-- Action Buttons Row (Row 3) -->
+                  <div class="flex gap-2 w-full">
+                    <!-- URL Button (Map) -->
+                    <a
+                      v-if="trip.url"
+                      :href="trip.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      @click.stop
+                      class="px-3 sm:px-4 py-2 sm:py-3 rounded-xl font-bold shadow-md transition-all flex items-center justify-center text-sm sm:text-base bg-green-500 text-white hover:bg-green-600 active:scale-95 flex-1"
+                      title="打開地圖連結"
+                    >
+                      Google 地圖
+                    </a>
+
+                    <!-- Enter Button -->
+                    <button
+                      :class="['px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold shadow-md active:bg-blue-800 transition-all flex items-center justify-center group-hover:scale-105 text-sm sm:text-base', trip.url ? 'flex-1' : 'w-full', isTripExpired(trip) ? 'bg-gray-400 text-white' : 'bg-fuji-blue text-white']"
+                    >
+                      {{ isTripExpired(trip) ? '回顧行程' : '進入行程' }}
+                      <i
+                        class="fas fa-arrow-right ml-1 sm:ml-2 text-xs sm:text-sm transition-transform group-hover:translate-x-1"
+                      ></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -357,6 +371,17 @@
                   formatDate(currentTrip.endDate) }}
                 </p>
               </div>
+              <!-- URL Link Button -->
+              <a
+                v-if="currentTrip.url"
+                :href="currentTrip.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="ml-2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors flex-shrink-0"
+                title="打開相關連結"
+              >
+                <i class="fas fa-external-link-alt text-lg"></i>
+              </a>
             </div>
           </div>
 
@@ -484,16 +509,6 @@
                   </button>
                 </div>
 
-                <!-- Image Section (After Tag) -->
-                <div
-                  class="w-full bg-gradient-to-b from-red-200 to-red-100 rounded-lg h-40 mb-3 flex items-center justify-center relative border-2 border-red-400"
-                >
-                  <div class="text-center">
-                    <p class="text-red-600 font-bold text-lg">圖片區域</p>
-                    <p class="text-red-500 text-sm">Test Display</p>
-                  </div>
-                </div>
-
                 <!-- Title -->
                 <h2 class="text-2xl font-bold mb-2 text-gray-800 leading-snug">
                   {{ item.activity }}
@@ -550,6 +565,32 @@
                     class="bg-fuji-blue text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-md active:bg-blue-700 active:scale-95 transition-transform"
                   >
                     <i class="fas fa-location-arrow text-xl"></i>
+                  </a>
+                </div>
+
+                <!-- URL Section -->
+                <div
+                  v-if="item.url"
+                  class="flex justify-between items-center mb-4"
+                >
+                  <div class="flex-1 mr-3 min-w-0">
+                    <div class="flex items-start text-gray-600">
+                      <i
+                        class="fas fa-link mt-1 mr-2 text-gray-400 flex-shrink-0"
+                      ></i>
+                      <p class="text-base line-clamp-2 break-all">
+                        {{ item.url }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <a
+                    :href="item.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="bg-green-500 text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-md active:bg-green-600 active:scale-95 transition-transform"
+                  >
+                    <i class="fas fa-external-link-alt text-xl"></i>
                   </a>
                 </div>
 
@@ -770,6 +811,23 @@
                   </p>
                 </div>
               </div>
+
+              <!-- URL Field -->
+              <div>
+                <label class="block text-base font-bold text-gray-600 mb-2">
+                  <i class="fas fa-link mr-1 text-fuji-blue"></i>相關連結
+                </label>
+                <input
+                  v-model="tripForm.url"
+                  type="url"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue placeholder-gray-400"
+                  placeholder="例如：https://example.com 或 Google 地圖連結（選填）"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  <i class="fas fa-info-circle mr-1"></i>輸入旅程相關的網址或
+                  Google 地圖連結，點擊時會另開新視窗
+                </p>
+              </div>
             </form>
           </div>
           <div class="p-6 pt-0">
@@ -903,6 +961,19 @@
                   class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
                   placeholder="注意事項、預約代號等"
                 ></textarea>
+              </div>
+
+              <!-- URL -->
+              <div>
+                <label class="block text-sm font-bold text-gray-500 mb-1"
+                  >相關連結</label
+                >
+                <input
+                  v-model="form.url"
+                  type="url"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
+                  placeholder="例如：https://example.com （選填）"
+                />
               </div>
             </form>
           </div>
@@ -1042,6 +1113,7 @@
             endDate: "",
             imageUrl: "",
             imageFile: null,
+            url: "",
           });
           const form = ref({
             id: null,
@@ -1051,6 +1123,7 @@
             bookingTime: "",
             address: "",
             note: "",
+            url: "",
           });
 
           // Static Data
@@ -1291,6 +1364,7 @@
               imageUrl: "",
               imageBase64: "",
               imageFile: null,
+              url: "",
             };
             isTripModalOpen.value = true;
           };
@@ -1395,6 +1469,7 @@
                   endDate: tripForm.value.endDate,
                   imageUrl: imageUrl,
                   imageBase64: imageBase64,
+                  url: tripForm.value.url,
                   updatedAt: Date.now(),
                 });
               } else {
@@ -1407,6 +1482,7 @@
                   endDate: tripForm.value.endDate,
                   imageUrl: imageUrl,
                   imageBase64: imageBase64,
+                  url: tripForm.value.url,
                   createdAt: Date.now(),
                 });
               }
@@ -1467,6 +1543,7 @@
               bookingTime: "",
               address: "",
               note: "",
+              url: "",
             };
             isModalOpen.value = true;
           };
