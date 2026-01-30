@@ -103,6 +103,21 @@
       [v-cloak] {
         display: none !important;
       }
+      /* 通用按鈕樣式 */
+      .btn-primary {
+        @apply bg-fuji-blue text-white font-bold py-3 rounded-xl shadow-lg transition-transform active:scale-95;
+      }
+      .btn-icon {
+        @apply p-2 rounded-full transition-colors;
+      }
+      /* 通用卡片樣式 */
+      .card {
+        @apply bg-white rounded-2xl overflow-hidden card-shadow;
+      }
+      /* 通用輸入框樣式 */
+      .input-field {
+        @apply w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors;
+      }
     </style>
   </head>
   <body class="text-fuji-text antialiased safe-bottom">
@@ -921,7 +936,7 @@
                   <option value="食物">🍜 食物</option>
                   <option value="購物">🛍️ 購物</option>
                   <option value="交通">🚅 交通</option>
-                  <option value="酒店">🏨 酒店</option>
+                  <option value="住宿">🏨 住宿</option>
                   <option value="活動">🧗 活動</option>
                 </select>
               </div>
@@ -1133,7 +1148,7 @@
             { name: "食物", icon: "fa-utensils" },
             { name: "購物", icon: "fa-shopping-bag" },
             { name: "交通", icon: "fa-train-subway" },
-            { name: "酒店", icon: "fa-bed" },
+            { name: "住宿", icon: "fa-bed" },
             { name: "活動", icon: "fa-person-hiking" },
           ];
 
@@ -1164,6 +1179,15 @@
           });
 
           const setupListeners = () => {
+            let tripsLoaded = false;
+            let schedulesLoaded = false;
+
+            const checkLoadingComplete = () => {
+              if (tripsLoaded && schedulesLoaded) {
+                loading.value = false;
+              }
+            };
+
             // Fetch Trips
             const qTrips = query(collection(db, "travel"));
             onSnapshot(
@@ -1171,14 +1195,20 @@
               (snapshot) => {
                 allTrips.value = snapshot.docs
                   .map((doc) => ({ id: doc.id, ...doc.data() }))
-                  .sort((a, b) => b.createdAt - a.createdAt);
+                  .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                tripsLoaded = true;
+                checkLoadingComplete();
               },
               (error) => {
-                console.error("Firestore Permission Error (Trips):", error);
+                console.error("Firestore Error (Trips):", error);
                 if (error.code === "permission-denied") {
                   permissionError.value = true;
-                  loading.value = false;
+                  showAlert(
+                    "無權限存取資料，請檢查 Firestore 規則設定",
+                    "error",
+                  );
                 }
+                loading.value = false;
               },
             );
 
@@ -1191,14 +1221,19 @@
                   id: doc.id,
                   ...doc.data(),
                 }));
-                loading.value = false;
+                schedulesLoaded = true;
+                checkLoadingComplete();
               },
               (error) => {
-                console.error("Firestore Permission Error (Schedules):", error);
+                console.error("Firestore Error (Schedules):", error);
                 if (error.code === "permission-denied") {
                   permissionError.value = true;
-                  loading.value = false;
+                  showAlert(
+                    "無權限存取資料，請檢查 Firestore 規則設定",
+                    "error",
+                  );
                 }
+                loading.value = false;
               },
             );
           };
@@ -1260,25 +1295,32 @@
           const filteredData = computed(() => {
             if (!currentTrip.value) return [];
             const targetTripId = currentTrip.value.id;
+            const isLegacy = targetTripId === "legacy";
+            const currentDayStr = String(currentDay.value);
+            const showAll = currentTag.value === "全部";
 
-            let data = allSchedules.value.filter((item) => {
-              const isTripMatch =
-                targetTripId === "legacy"
-                  ? !item.tripId
-                  : item.tripId === targetTripId;
+            const data = allSchedules.value.filter((item) => {
+              // 快速篩選：先檢查 day 匹配
+              if (String(item.day) !== currentDayStr) return false;
+
+              // 檢查 trip 匹配
+              const isTripMatch = isLegacy
+                ? !item.tripId
+                : item.tripId === targetTripId;
               if (!isTripMatch) return false;
-              const isDayMatch = String(item.day) === String(currentDay.value);
-              const isTagMatch =
-                currentTag.value === "全部" || item.tag === currentTag.value;
-              return isDayMatch && isTagMatch;
+
+              // 檢查標籤匹配
+              return showAll || item.tag === currentTag.value;
             });
 
+            // 使用穩定排序
             return data.sort((a, b) => {
-              if (a.order !== undefined && b.order !== undefined)
-                return a.order - b.order;
-              const timeA = a.bookingTime || "99:99";
-              const timeB = b.bookingTime || "99:99";
-              return timeA.localeCompare(timeB);
+              const orderA = a.order ?? Infinity;
+              const orderB = b.order ?? Infinity;
+              if (orderA !== orderB) return orderA - orderB;
+              return (a.bookingTime || "99:99").localeCompare(
+                b.bookingTime || "99:99",
+              );
             });
           });
 
@@ -1292,10 +1334,18 @@
             }
             const start = new Date(currentTrip.value.startDate);
             const end = new Date(currentTrip.value.endDate);
+
+            // 驗證日期有效性
+            if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+              return [];
+            }
+
             const days = [];
-            let current = new Date(start);
+            const current = new Date(start);
             let dayNum = 1;
-            while (current <= end) {
+            const maxDays = 365; // 防止無限循環
+
+            while (current <= end && dayNum <= maxDays) {
               days.push({
                 num: dayNum,
                 dateDisplay: `${current.getMonth() + 1}/${current.getDate()}`,
@@ -1389,10 +1439,17 @@
             const file = event.target.files?.[0];
             if (!file) return;
 
+            // Validate file type
+            if (!file.type.startsWith("image/")) {
+              showAlert("請選擇圖片檔案", "error");
+              return;
+            }
+
             // Check file size (limit to 5MB)
             const maxSize = 5 * 1024 * 1024;
             if (file.size > maxSize) {
               showAlert("圖片大小不能超過 5MB", "error");
+              event.target.value = ""; // Clear input
               return;
             }
 
@@ -1403,86 +1460,64 @@
             reader.onload = (e) => {
               tripForm.value.imageUrl = e.target?.result || "";
             };
-            reader.readAsDataURL(file);
-          };
-
-          const handleScheduleImageUpload = (event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-
-            // Check file size (limit to 5MB)
-            const maxSize = 5 * 1024 * 1024;
-            if (file.size > maxSize) {
-              showAlert("圖片大小不能超過 5MB", "error");
-              return;
-            }
-
-            form.value.imageFile = file;
-
-            // Convert to Base64
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              form.value.imageUrl = e.target?.result || "";
+            reader.onerror = () => {
+              showAlert("圖片讀取失敗", "error");
+              event.target.value = "";
             };
             reader.readAsDataURL(file);
           };
 
           const submitTrip = async () => {
             if (!user.value) return;
+
+            // 驗證日期
+            const start = new Date(tripForm.value.startDate);
+            const end = new Date(tripForm.value.endDate);
+            if (start > end) {
+              showAlert("結束日期必須在開始日期之後", "error");
+              return;
+            }
+
             submitting.value = true;
             try {
-              // 暫時改用 Base64 方式存儲圖片（相容舊資料）
               let imageBase64 = tripForm.value.imageBase64 || "";
               let imageUrl = tripForm.value.imageUrl || "";
 
-              // 如果選擇了新檔案，將其轉換為 Base64 存儲（先暫用此方案規避 CORS 問題）
-              if (
-                tripForm.value.imageFile &&
-                tripForm.value.imageFile instanceof File
-              ) {
+              // 如果選擇了新檔案，將其轉換為 Base64 存儲
+              if (tripForm.value.imageFile instanceof File) {
                 try {
-                  const reader = new FileReader();
-                  await new Promise((resolve, reject) => {
-                    reader.onload = () => {
-                      imageBase64 = reader.result;
-                      imageUrl = ""; // 清除 imageUrl，使用 imageBase64
-                      resolve();
-                    };
-                    reader.onerror = reject;
+                  imageBase64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(new Error("圖片讀取失敗"));
                     reader.readAsDataURL(tripForm.value.imageFile);
                   });
+                  imageUrl = ""; // 清除 imageUrl，使用 imageBase64
                 } catch (error) {
                   console.error("Image conversion error:", error);
-                  showAlert("圖片轉換失敗", "error");
+                  showAlert(error.message || "圖片轉換失敗", "error");
                   submitting.value = false;
                   return;
                 }
               }
 
-              if (isEditingTrip.value && tripForm.value.id) {
-                // 編輯現有行程
-                const docRef = doc(db, "travel", tripForm.value.id);
+              const tripData = {
+                name: tripForm.value.name.trim(),
+                startDate: tripForm.value.startDate,
+                endDate: tripForm.value.endDate,
+                imageUrl,
+                imageBase64,
+                url: tripForm.value.url.trim(),
+                updatedAt: Date.now(),
+              };
 
-                await updateDoc(docRef, {
-                  name: tripForm.value.name,
-                  startDate: tripForm.value.startDate,
-                  endDate: tripForm.value.endDate,
-                  imageUrl: imageUrl,
-                  imageBase64: imageBase64,
-                  url: tripForm.value.url,
-                  updatedAt: Date.now(),
-                });
+              if (isEditingTrip.value && tripForm.value.id) {
+                await updateDoc(doc(db, "travel", tripForm.value.id), tripData);
               } else {
-                // 新增行程 - 用序號作為 ID
-                const newId = String(allTrips.value.length + 1);
+                const newId = String(Date.now()); // 使用時間戳作為 ID 更安全
                 await setDoc(doc(db, "travel", newId), {
+                  ...tripData,
                   id: newId,
-                  name: tripForm.value.name,
-                  startDate: tripForm.value.startDate,
-                  endDate: tripForm.value.endDate,
-                  imageUrl: imageUrl,
-                  imageBase64: imageBase64,
-                  url: tripForm.value.url,
                   createdAt: Date.now(),
                 });
               }
@@ -1490,7 +1525,7 @@
               showAlert("保存成功！", "success");
             } catch (e) {
               console.error("Save error:", e);
-              showAlert("儲存失敗", "error");
+              showAlert(`儲存失敗：${e.message || "未知錯誤"}`, "error");
             } finally {
               submitting.value = false;
             }
@@ -1556,35 +1591,47 @@
 
           const submitForm = async () => {
             if (!user.value) return;
-            submitting.value = true;
-            let newOrder = 0;
-            if (!isEditing.value) {
-              const currentItems = filteredData.value;
-              newOrder =
-                currentItems.length > 0
-                  ? Math.max(...currentItems.map((i) => i.order || 0)) + 1
-                  : 0;
+
+            // 驗證必填欄位
+            if (!form.value.activity.trim()) {
+              showAlert("請填寫活動名稱", "error");
+              return;
             }
 
-            const payload = {
-              ...form.value,
-              day: String(form.value.day),
-              tripId:
-                currentTrip.value.id === "legacy" ? null : currentTrip.value.id,
-              updatedAt: Date.now(),
-            };
-            if (!isEditing.value) payload.order = newOrder;
+            submitting.value = true;
 
             try {
+              const payload = {
+                day: String(form.value.day),
+                activity: form.value.activity.trim(),
+                tag: form.value.tag,
+                bookingTime: form.value.bookingTime.trim(),
+                address: form.value.address.trim(),
+                note: form.value.note.trim(),
+                url: form.value.url.trim(),
+                tripId:
+                  currentTrip.value.id === "legacy"
+                    ? null
+                    : currentTrip.value.id,
+                updatedAt: Date.now(),
+              };
+
+              // 計算新的排序順序
+              if (!isEditing.value) {
+                const currentItems = filteredData.value;
+                payload.order =
+                  currentItems.length > 0
+                    ? Math.max(...currentItems.map((i) => i.order ?? 0)) + 1
+                    : 0;
+              }
+
               if (isEditing.value && form.value.id) {
-                // 編輯現有行程
                 await updateDoc(
                   doc(db, "travel_schedule", form.value.id),
                   payload,
                 );
               } else {
-                // 新增行程 - 用序號作為 ID
-                const newId = String(allSchedules.value.length + 1);
+                const newId = String(Date.now()); // 使用時間戳作為 ID
                 await setDoc(doc(db, "travel_schedule", newId), {
                   ...payload,
                   id: newId,
@@ -1592,8 +1639,10 @@
                 });
               }
               closeModal();
+              showAlert("保存成功", "success");
             } catch (e) {
-              showAlert("儲存失敗", "error");
+              console.error("Save error:", e);
+              showAlert(`儲存失敗：${e.message || "未知錯誤"}`, "error");
             } finally {
               submitting.value = false;
             }
@@ -1625,10 +1674,12 @@
             return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
           };
           const calculateDuration = (start, end) => {
+            if (!start || !end) return 0;
             const s = new Date(start);
             const e = new Date(end);
-            const diffTime = Math.abs(e - s);
-            return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+            const diffTime = Math.abs(e.getTime() - s.getTime());
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
           };
 
           const categoryMap = {
