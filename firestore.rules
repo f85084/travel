@@ -8,5 +8,8 @@ service cloud.firestore {
     match /travel_schedule/{document=**} {
       allow read, write: if true;
     }
+    match /travel_extra/{document=**} {
+      allow read, write: if true;
+    }
   }
 }

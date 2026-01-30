@@ -404,16 +404,33 @@
           <div
             class="mt-2 -mx-4 px-4 overflow-x-auto no-scrollbar flex space-x-2 pb-2"
           >
+            <!-- All Activities Button -->
+            <button
+              @click="currentDay = 'all'; showExtraView = false"
+              :class="['flex-none px-6 py-2 rounded-xl font-bold text-sm sm:text-base transition-all transform active:scale-95 flex flex-col items-center justify-center min-w-[100px]', currentDay === 'all' ? 'bg-white text-fuji-blue shadow-md' : 'bg-fuji-blue/50 text-white/80']"
+            >
+              <span>全部</span>
+              <span>行程</span>
+            </button>
             <button
               v-for="day in tripDays"
               :key="day.num"
-              @click="currentDay = String(day.num)"
+              @click="currentDay = String(day.num); showExtraView = false"
               :class="['flex-none px-6 py-2 rounded-xl font-bold text-sm sm:text-base transition-all transform active:scale-95 flex flex-col items-center justify-center min-w-[100px]', currentDay === String(day.num) ? 'bg-white text-fuji-blue shadow-md' : 'bg-fuji-blue/50 text-white/80']"
             >
               <span>Day {{ day.num }}</span>
               <span class="text-xs font-normal opacity-80 mt-0.5"
                 >{{ day.dateDisplay }}</span
               >
+            </button>
+
+            <!-- Add Extra Schedule Button -->
+            <button
+              @click="showExtraView = true"
+              :class="['flex-none px-4 py-2 rounded-xl font-bold text-sm sm:text-base border transition-all', showExtraView ? 'bg-white text-fuji-blue border-white' : 'bg-white/20 text-white border-white/30 hover:bg-white/30']"
+            >
+              <span>額外</span>
+              <span>行程</span>
             </button>
           </div>
 
@@ -492,8 +509,205 @@
             </button>
           </div>
 
+          <!-- 額外行程區塊 -->
+          <div v-if="showExtraView" class="mt-2">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                <i class="fas fa-star text-yellow-400 mr-2"></i>額外行程
+              </h3>
+              <button
+                @click="openAddExtraModal"
+                class="px-3 py-1.5 rounded-lg bg-fuji-blue text-white text-sm font-bold shadow-sm hover:bg-blue-700 active:scale-95 transition-transform"
+              >
+                <i class="fas fa-plus mr-1"></i>新增
+              </button>
+            </div>
+            <div class="space-y-4">
+              <!-- Extra Items Cards -->
+              <div
+                v-for="item in filteredExtraData"
+                :key="item.id"
+                class="bg-white rounded-2xl overflow-hidden card-shadow relative group transition-all duration-300 w-full flex flex-col"
+              >
+                <!-- Category Color Strip -->
+                <div
+                  :class="['w-2 sm:w-2 flex-shrink-0 absolute top-0 bottom-0', getCategoryColor(item.tag)]"
+                ></div>
+
+                <!-- Card Content -->
+                <div class="p-4 sm:p-5 flex-1 min-w-0 ml-2">
+                  <!-- Header: Tag & Edit -->
+                  <div class="flex justify-between items-start mb-2">
+                    <span
+                      :class="['text-sm font-bold px-3 py-1 rounded-full bg-opacity-10 text-opacity-100 flex items-center', getCategoryBadgeStyle(item.tag)]"
+                    >
+                      <i :class="['fas mr-1', getCategoryIcon(item.tag)]"></i>
+                      {{ item.tag || '未分類' }}
+                    </span>
+                    <button
+                      @click="openEditExtraModal(item)"
+                      class="text-gray-300 hover:text-fuji-blue p-2 -mr-2 -mt-2"
+                    >
+                      <i class="fas fa-pen text-lg"></i>
+                    </button>
+                  </div>
+
+                  <!-- Title -->
+                  <h2
+                    class="text-2xl font-bold mb-2 text-gray-800 leading-snug"
+                  >
+                    {{ item.activity }}
+                  </h2>
+
+                  <!-- Time -->
+                  <div
+                    v-if="item.bookingTime"
+                    class="flex items-center text-fuji-blue font-bold text-lg mb-3 bg-blue-50 w-fit px-3 py-1 rounded-lg"
+                  >
+                    <i class="far fa-clock mr-2"></i>
+                    {{ item.bookingTime }}
+                  </div>
+
+                  <!-- Address & Navigation -->
+                  <div
+                    v-if="item.address"
+                    class="flex justify-between items-center mb-4"
+                  >
+                    <div class="flex-1 mr-3 min-w-0">
+                      <div class="flex items-start text-gray-600">
+                        <i
+                          class="fas fa-map-marker-alt mt-1 mr-2 text-gray-400 flex-shrink-0"
+                        ></i>
+                        <p class="text-base line-clamp-2">{{ item.address }}</p>
+                      </div>
+
+                      <!-- Parking Logic -->
+                      <div
+                        v-if="hasParkingInfo(item)"
+                        class="mt-2 flex items-center text-green-600 text-sm font-bold ml-6"
+                      >
+                        <i class="fas fa-parking mr-1"></i>
+                        <span>有停車位</span>
+                      </div>
+                      <div
+                        v-else
+                        class="mt-2 flex items-center text-gray-400 text-sm ml-6"
+                      >
+                        <i class="fas fa-question-circle mr-1"></i>
+                        <a
+                          :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.activity + ' ' + item.address + ' 停車場')}`"
+                          target="_blank"
+                          class="underline decoration-dotted hover:text-fuji-blue"
+                          >找車位</a
+                        >
+                      </div>
+                    </div>
+
+                    <a
+                      :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.activity + ' ' + item.address)}`"
+                      target="_blank"
+                      class="bg-fuji-blue text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-md active:bg-blue-700 active:scale-95 transition-transform"
+                    >
+                      <i class="fas fa-location-arrow text-xl"></i>
+                    </a>
+                  </div>
+
+                  <!-- URL Section -->
+                  <div
+                    v-if="item.url"
+                    class="flex justify-between items-center mb-4"
+                  >
+                    <div class="flex-1 mr-3 min-w-0">
+                      <div class="flex items-start text-gray-600">
+                        <i
+                          class="fas fa-link mt-1 mr-2 text-gray-400 flex-shrink-0"
+                        ></i>
+                        <p class="text-base line-clamp-2 break-all">
+                          {{ item.url }}
+                        </p>
+                      </div>
+                    </div>
+
+                    <a
+                      :href="item.url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="bg-green-500 text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-md active:bg-green-600 active:scale-95 transition-transform"
+                    >
+                      <i class="fas fa-external-link-alt text-xl"></i>
+                    </a>
+                  </div>
+
+                  <!-- Notes Section -->
+                  <div
+                    v-if="item.note"
+                    class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg mt-3"
+                  >
+                    <p
+                      class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap"
+                    >
+                      <i class="fas fa-info-circle text-yellow-500 mr-1"></i> {{
+                      item.note }}
+                    </p>
+                  </div>
+
+                  <!-- Toggle Details Button -->
+                  <button
+                    @click="toggleExpand(item.id)"
+                    class="w-full mt-3 flex items-center justify-center py-2 text-gray-400 hover:text-fuji-blue transition-colors border-t border-gray-100"
+                  >
+                    <span class="text-sm font-bold mr-1"
+                      >{{ expandedItems.includes(item.id) ? '收合更多資訊' :
+                      '查看網路資訊' }}</span
+                    >
+                    <i
+                      :class="['fas transition-transform duration-300', expandedItems.includes(item.id) ? 'fa-chevron-up' : 'fa-chevron-down']"
+                    ></i>
+                  </button>
+
+                  <!-- Expanded Content -->
+                  <div v-if="expandedItems.includes(item.id)" class="pt-2">
+                    <div class="bg-blue-50 rounded-xl p-4">
+                      <h4 class="text-sm text-fuji-blue font-bold mb-2">
+                        <i class="fab fa-google mr-1"></i>網路上查到的資訊
+                      </h4>
+                      <div class="space-y-2">
+                        <a
+                          :href="`https://www.google.com/search?q=${encodeURIComponent(item.activity + ' 評價')}`"
+                          target="_blank"
+                          class="block bg-white p-3 rounded-lg shadow-sm text-gray-700 flex justify-between items-center active:bg-gray-50"
+                        >
+                          <span
+                            ><i class="fas fa-star text-yellow-400 mr-2"></i
+                            >查看 Google 評價</span
+                          >
+                          <i
+                            class="fas fa-external-link-alt text-gray-300 text-sm"
+                          ></i>
+                        </a>
+                        <a
+                          :href="`https://www.instagram.com/explore/tags/${encodeURIComponent(item.activity.replace(/\s/g, ''))}/`"
+                          target="_blank"
+                          class="block bg-white p-3 rounded-lg shadow-sm text-gray-700 flex justify-between items-center active:bg-gray-50"
+                        >
+                          <span
+                            ><i class="fab fa-instagram text-pink-500 mr-2"></i
+                            >IG 熱門打卡</span
+                          >
+                          <i
+                            class="fas fa-external-link-alt text-gray-300 text-sm"
+                          ></i>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Sortable List Container -->
-          <div ref="sortableList" class="space-y-4">
+          <div v-if="!showExtraView" ref="sortableList" class="space-y-4">
             <!-- Cards -->
             <div
               v-for="item in filteredData"
@@ -875,7 +1089,8 @@
             class="p-6 pb-2 flex justify-between items-center sticky top-0 bg-white z-10 border-b border-gray-100"
           >
             <h3 class="text-2xl font-bold text-gray-800">
-              {{ isEditing ? '編輯行程' : '新增行程' }}
+              {{ form.isExtra ? (isEditing ? '編輯額外行程' : '新增額外行程') :
+              (isEditing ? '編輯行程' : '新增行程') }}
             </h3>
             <button
               @click="closeModal"
@@ -892,7 +1107,7 @@
               class="space-y-4"
             >
               <!-- Day Selection (Dynamic) -->
-              <div>
+              <div v-if="!form.isExtra">
                 <label class="block text-sm font-bold text-gray-500 mb-1"
                   >選擇日期</label
                 >
@@ -933,7 +1148,7 @@
                   class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg appearance-none focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
                 >
                   <option value="景點">🗻 景點</option>
-                  <option value="食物">🍜 食物</option>
+                  <option value="食">🍜 食</option>
                   <option value="購物">🛍️ 購物</option>
                   <option value="交通">🚅 交通</option>
                   <option value="住宿">🏨 住宿</option>
@@ -1099,10 +1314,11 @@
           // Data Collections
           const allTrips = ref([]);
           const allSchedules = ref([]);
+          const allExtraSchedules = ref([]);
 
           // Navigation & Filter State
           const currentTrip = ref(null);
-          const currentDay = ref("1");
+          const currentDay = ref("all");
           const currentTag = ref("全部");
           const tripFilter = ref("upcoming");
           const showScheduleImages = ref({});
@@ -1115,6 +1331,7 @@
           const expandedItems = ref([]);
           const imageModalUrl = ref(null);
           const showTripImage = ref(true);
+          const showExtraView = ref(false);
 
           // Sortable
           const sortableList = ref(null);
@@ -1132,6 +1349,7 @@
           });
           const form = ref({
             id: null,
+            isExtra: false,
             day: "1",
             activity: "",
             tag: "景點",
@@ -1145,7 +1363,7 @@
           const filterTags = [
             { name: "全部", icon: "fa-list" },
             { name: "景點", icon: "fa-camera" },
-            { name: "食物", icon: "fa-utensils" },
+            { name: "食", icon: "fa-utensils" },
             { name: "購物", icon: "fa-shopping-bag" },
             { name: "交通", icon: "fa-train-subway" },
             { name: "住宿", icon: "fa-bed" },
@@ -1181,9 +1399,10 @@
           const setupListeners = () => {
             let tripsLoaded = false;
             let schedulesLoaded = false;
+            let extraSchedulesLoaded = false;
 
             const checkLoadingComplete = () => {
-              if (tripsLoaded && schedulesLoaded) {
+              if (tripsLoaded && schedulesLoaded && extraSchedulesLoaded) {
                 loading.value = false;
               }
             };
@@ -1226,6 +1445,31 @@
               },
               (error) => {
                 console.error("Firestore Error (Schedules):", error);
+                if (error.code === "permission-denied") {
+                  permissionError.value = true;
+                  showAlert(
+                    "無權限存取資料，請檢查 Firestore 規則設定",
+                    "error",
+                  );
+                }
+                loading.value = false;
+              },
+            );
+
+            // Fetch All Extra Schedules
+            const qExtraSchedules = query(collection(db, "travel_extra"));
+            onSnapshot(
+              qExtraSchedules,
+              (snapshot) => {
+                allExtraSchedules.value = snapshot.docs.map((doc) => ({
+                  id: doc.id,
+                  ...doc.data(),
+                }));
+                extraSchedulesLoaded = true;
+                checkLoadingComplete();
+              },
+              (error) => {
+                console.error("Firestore Error (Extra Schedules):", error);
                 if (error.code === "permission-denied") {
                   permissionError.value = true;
                   showAlert(
@@ -1298,11 +1542,41 @@
             const isLegacy = targetTripId === "legacy";
             const currentDayStr = String(currentDay.value);
             const showAll = currentTag.value === "全部";
+            const showAllDays = currentDayStr === "all";
 
             const data = allSchedules.value.filter((item) => {
-              // 快速篩選：先檢查 day 匹配
-              if (String(item.day) !== currentDayStr) return false;
+              // 檢查 day 匹配：如果選擇 "all" 則顯示所有天
+              if (!showAllDays && String(item.day) !== currentDayStr)
+                return false;
 
+              // 檢查 trip 匹配
+              const isTripMatch = isLegacy
+                ? !item.tripId
+                : item.tripId === targetTripId;
+              if (!isTripMatch) return false;
+
+              // 檢查標籤匹配
+              return showAll || item.tag === currentTag.value;
+            });
+
+            // 使用穩定排序
+            return data.sort((a, b) => {
+              const orderA = a.order ?? Infinity;
+              const orderB = b.order ?? Infinity;
+              if (orderA !== orderB) return orderA - orderB;
+              return (a.bookingTime || "99:99").localeCompare(
+                b.bookingTime || "99:99",
+              );
+            });
+          });
+
+          const filteredExtraData = computed(() => {
+            if (!currentTrip.value) return [];
+            const targetTripId = currentTrip.value.id;
+            const isLegacy = targetTripId === "legacy";
+            const showAll = currentTag.value === "全部";
+
+            const data = allExtraSchedules.value.filter((item) => {
               // 檢查 trip 匹配
               const isTripMatch = isLegacy
                 ? !item.tripId
@@ -1392,6 +1666,7 @@
             currentTrip.value = trip;
             currentDay.value = "1";
             currentTag.value = "全部";
+            showExtraView.value = false;
           };
           const selectLegacyTrip = () => {
             currentTrip.value = {
@@ -1402,6 +1677,7 @@
             };
             currentDay.value = "1";
             currentTag.value = "全部";
+            showExtraView.value = false;
           };
 
           const openTripModal = () => {
@@ -1572,7 +1848,8 @@
             isEditing.value = false;
             form.value = {
               id: null,
-              day: currentDay.value,
+              isExtra: false,
+              day: currentDay.value === "all" ? "1" : currentDay.value,
               activity: "",
               tag: "景點",
               bookingTime: "",
@@ -1584,7 +1861,27 @@
           };
           const openEditModal = (item) => {
             isEditing.value = true;
-            form.value = { ...item };
+            form.value = { ...item, isExtra: false };
+            isModalOpen.value = true;
+          };
+          const openAddExtraModal = () => {
+            isEditing.value = false;
+            form.value = {
+              id: null,
+              isExtra: true,
+              day: currentDay.value === "all" ? "1" : currentDay.value,
+              activity: "",
+              tag: "景點",
+              bookingTime: "",
+              address: "",
+              note: "",
+              url: "",
+            };
+            isModalOpen.value = true;
+          };
+          const openEditExtraModal = (item) => {
+            isEditing.value = true;
+            form.value = { ...item, isExtra: true };
             isModalOpen.value = true;
           };
           const closeModal = () => (isModalOpen.value = false);
@@ -1601,8 +1898,11 @@
             submitting.value = true;
 
             try {
+              const isExtra = form.value.isExtra || false;
+              const collectionName = isExtra
+                ? "travel_extra"
+                : "travel_schedule";
               const payload = {
-                day: String(form.value.day),
                 activity: form.value.activity.trim(),
                 tag: form.value.tag,
                 bookingTime: form.value.bookingTime.trim(),
@@ -1616,9 +1916,16 @@
                 updatedAt: Date.now(),
               };
 
+              // 只有 travel_schedule 需要 day 欄位
+              if (!isExtra) {
+                payload.day = String(form.value.day);
+              }
+
               // 計算新的排序順序
               if (!isEditing.value) {
-                const currentItems = filteredData.value;
+                const currentItems = isExtra
+                  ? filteredExtraData.value
+                  : filteredData.value;
                 payload.order =
                   currentItems.length > 0
                     ? Math.max(...currentItems.map((i) => i.order ?? 0)) + 1
@@ -1627,12 +1934,12 @@
 
               if (isEditing.value && form.value.id) {
                 await updateDoc(
-                  doc(db, "travel_schedule", form.value.id),
+                  doc(db, collectionName, form.value.id),
                   payload,
                 );
               } else {
                 const newId = String(Date.now()); // 使用時間戳作為 ID
-                await setDoc(doc(db, "travel_schedule", newId), {
+                await setDoc(doc(db, collectionName, newId), {
                   ...payload,
                   id: newId,
                   createdAt: Date.now(),
@@ -1654,7 +1961,11 @@
             if (!user.value || !form.value.id) return;
             submitting.value = true;
             try {
-              await deleteDoc(doc(db, "travel_schedule", form.value.id));
+              const isExtra = form.value.isExtra || false;
+              const collectionName = isExtra
+                ? "travel_extra"
+                : "travel_schedule";
+              await deleteDoc(doc(db, collectionName, form.value.id));
               closeModal();
             } catch (e) {
               showAlert("刪除失敗", "error");
@@ -1683,7 +1994,7 @@
           };
 
           const categoryMap = {
-            食物: {
+            食: {
               color: "bg-orange-400",
               icon: "fa-utensils",
               badge: "text-orange-600 bg-orange-600",
@@ -1703,7 +2014,7 @@
               icon: "fa-camera",
               badge: "text-emerald-600 bg-emerald-600",
             },
-            酒店: {
+            住宿: {
               color: "bg-indigo-500",
               icon: "fa-bed",
               badge: "text-indigo-600 bg-indigo-600",
@@ -1737,6 +2048,7 @@
             currentTrip,
             hasLegacyData,
             filteredData,
+            filteredExtraData,
             tripDays,
             filterTags,
             currentDay,
@@ -1756,6 +2068,7 @@
             isTripExpired,
             getTripImageUrl,
             showTripImage,
+            showExtraView,
             selectTrip,
             selectLegacyTrip,
             confirmDeleteTrip,
@@ -1767,6 +2080,8 @@
             submitTrip,
             openAddModal,
             openEditModal,
+            openAddExtraModal,
+            openEditExtraModal,
             closeModal,
             submitForm,
             deleteItem,
