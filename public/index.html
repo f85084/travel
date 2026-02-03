@@ -513,7 +513,8 @@
           <div v-if="showExtraView" class="mt-2">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800 flex items-center">
-                <i class="fas fa-star text-yellow-400 mr-2"></i>額外行程
+                <i class="fa-solid fa-bookmark text-yellow-400 mr-2"></i
+                >額外行程
               </h3>
               <button
                 @click="openAddExtraModal"
@@ -544,12 +545,28 @@
                       <i :class="['fas mr-1', getCategoryIcon(item.tag)]"></i>
                       {{ item.tag || '未分類' }}
                     </span>
-                    <button
-                      @click="openEditExtraModal(item)"
-                      class="text-gray-300 hover:text-fuji-blue p-2 -mr-2 -mt-2"
-                    >
-                      <i class="fas fa-pen text-lg"></i>
-                    </button>
+                    <div class="flex items-center space-x-2">
+                      <select
+                        @change="moveToDay(item, $event)"
+                        class="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1 text-gray-600 hover:border-fuji-blue focus:outline-none focus:ring-1 focus:ring-fuji-blue"
+                        title="加到天數"
+                      >
+                        <option value="" disabled selected>加到...</option>
+                        <option
+                          v-for="day in tripDays"
+                          :key="day.num"
+                          :value="day.num"
+                        >
+                          Day {{ day.num }}
+                        </option>
+                      </select>
+                      <button
+                        @click="openEditExtraModal(item)"
+                        class="text-gray-300 hover:text-fuji-blue p-2 -mr-2 -mt-2"
+                      >
+                        <i class="fas fa-pen text-lg"></i>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Title -->
@@ -730,12 +747,21 @@
                     <i :class="['fas mr-1', getCategoryIcon(item.tag)]"></i>
                     {{ item.tag || '未分類' }}
                   </span>
-                  <button
-                    @click="openEditModal(item)"
-                    class="text-gray-300 hover:text-fuji-blue p-2 -mr-2 -mt-2"
-                  >
-                    <i class="fas fa-pen text-lg"></i>
-                  </button>
+                  <div class="flex space-x-1">
+                    <button
+                      @click="moveToExtra(item)"
+                      class="text-gray-300 hover:text-yellow-500 p-2 -mt-2"
+                      title="移至額外行程"
+                    >
+                      <i class="fa-solid fa-bookmark text-lg"></i>
+                    </button>
+                    <button
+                      @click="openEditModal(item)"
+                      class="text-gray-300 hover:text-fuji-blue p-2 -mr-2 -mt-2"
+                    >
+                      <i class="fas fa-pen text-lg"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Title -->
@@ -2037,6 +2063,111 @@
               (item.note || "").includes(k),
             );
 
+          // 移動一般行程到額外行程
+          const moveToExtra = async (item) => {
+            if (!user.value || !item.id) return;
+
+            try {
+              submitting.value = true;
+
+              // 計算新的排序順序
+              const currentExtraItems = filteredExtraData.value;
+              const newOrder =
+                currentExtraItems.length > 0
+                  ? Math.max(...currentExtraItems.map((i) => i.order ?? 0)) + 1
+                  : 0;
+
+              // 在額外行程集合中創建新項目
+              const newExtraItem = {
+                activity: item.activity,
+                tag: item.tag,
+                bookingTime: item.bookingTime || "",
+                address: item.address || "",
+                note: item.note || "",
+                url: item.url || "",
+                tripId: item.tripId,
+                order: newOrder,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+              };
+
+              const newId = String(Date.now());
+              await setDoc(doc(db, "travel_extra", newId), {
+                ...newExtraItem,
+                id: newId,
+              });
+
+              // 刪除原來的一般行程項目
+              await deleteDoc(doc(db, "travel_schedule", item.id));
+
+              showAlert("已移至額外行程", "success");
+            } catch (e) {
+              console.error("Move to extra error:", e);
+              showAlert(`移動失敗：${e.message || "未知錯誤"}`, "error");
+            } finally {
+              submitting.value = false;
+            }
+          };
+
+          // 移動額外行程到一般行程的特定天數
+          const moveToDay = async (item, event) => {
+            const dayNum = event.target.value;
+            if (!user.value || !item.id || !dayNum) return;
+
+            try {
+              submitting.value = true;
+
+              // 計算新的排序順序
+              const currentDayItems = allSchedules.value.filter(
+                (schedule) =>
+                  schedule.tripId === item.tripId &&
+                  String(schedule.day) === String(dayNum),
+              );
+              const newOrder =
+                currentDayItems.length > 0
+                  ? Math.max(...currentDayItems.map((i) => i.order ?? 0)) + 1
+                  : 0;
+
+              // 在一般行程集合中創建新項目
+              const newScheduleItem = {
+                activity: item.activity,
+                tag: item.tag,
+                bookingTime: item.bookingTime || "",
+                address: item.address || "",
+                note: item.note || "",
+                url: item.url || "",
+                tripId: item.tripId,
+                day: String(dayNum),
+                order: newOrder,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+              };
+
+              const newId = String(Date.now());
+              await setDoc(doc(db, "travel_schedule", newId), {
+                ...newScheduleItem,
+                id: newId,
+              });
+
+              // 刪除原來的額外行程項目
+              await deleteDoc(doc(db, "travel_extra", item.id));
+
+              // 重置下拉選單
+              event.target.value = "";
+
+              showAlert(`已加到 Day ${dayNum}`, "success");
+
+              // 切換到該天的視圖
+              currentDay.value = String(dayNum);
+              showExtraView.value = false;
+            } catch (e) {
+              console.error("Move to day error:", e);
+              showAlert(`移動失敗：${e.message || "未知錯誤"}`, "error");
+            } finally {
+              submitting.value = false;
+            }
+          };
+
           return {
             user,
             loading,
@@ -2092,6 +2223,8 @@
             getCategoryIcon,
             getCategoryBadgeStyle,
             hasParkingInfo,
+            moveToExtra,
+            moveToDay,
           };
         },
       }).mount("#app");
