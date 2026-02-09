@@ -1,0 +1,69 @@
+/* ==================== 全局樣式 ==================== */
+body {
+  background-color: #f0f4f8;
+  background-image: radial-gradient(#dbeafe 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ==================== 滾動條樣式 ==================== */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==================== 陰影效果 ==================== */
+.card-shadow {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* ==================== 安全區域 ==================== */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ==================== Modal 樣式 ==================== */
+.modal-content {
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ==================== 拖拽樣式 ==================== */
+.sortable-ghost {
+  opacity: 0.4;
+  background-color: #f3f4f6;
+}
+
+.sortable-drag {
+  cursor: grabbing;
+}
+
+/* ==================== Vue 載入前隱藏 ==================== */
+[v-cloak] {
+  display: none !important;
+}
+
+/* ==================== 通用按鈕樣式 ==================== */
+.btn-primary {
+  @apply bg-fuji-blue text-white font-bold py-3 rounded-xl shadow-lg transition-transform active:scale-95;
+}
+
+.btn-icon {
+  @apply p-2 rounded-full transition-colors;
+}
+
+/* ==================== 通用卡片樣式 ==================== */
+.card {
+  @apply bg-white rounded-2xl overflow-hidden card-shadow;
+}
+
+/* ==================== 通用輸入框樣式 ==================== */
+.input-field {
+  @apply w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors;
+}
