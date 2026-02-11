@@ -43,6 +43,9 @@
     <!-- 🔹 引入外部設定檔 -->
     <script src="config.js"></script>
 
+    <!-- Google Places API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFIJsMiLTcM1W7RvZ9xm9DJhBaT4aSyn4&libraries=places&language=zh-TW"></script>
+
     <script>
       tailwind.config = {
         theme: {
@@ -611,10 +614,10 @@
               </div>
             </div>
 
-            <!-- Show/Hide Toggle Button -->
+            <!-- Show/Hide Toggle Button (Auto-collapse after 3 seconds) -->
             <button
               v-if="getTripImageUrl(currentTrip)"
-              @click="showTripImage = !showTripImage"
+              @click="showTripImage = !showTripImage; isUserControlled = true"
               class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors flex-shrink-0"
             >
               <i
@@ -782,6 +785,19 @@
                   >
                     <i class="far fa-clock mr-2"></i>
                     {{ item.bookingTime }}
+                  </div>
+
+                  <!-- Business Info -->
+                  <div
+                    v-if="item.businessHours"
+                    class="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3"
+                  >
+                    <strong class="text-amber-700 text-sm block mb-1"
+                      >營業時間：</strong
+                    >
+                    <span class="whitespace-pre-line text-amber-700 text-sm"
+                      >{{ item.businessHours }}</span
+                    >
                   </div>
 
                   <!-- Address & Navigation -->
@@ -975,6 +991,19 @@
                 >
                   <i class="far fa-clock mr-2"></i>
                   {{ item.bookingTime }}
+                </div>
+
+                <!-- Business Info -->
+                <div
+                  v-if="item.businessHours"
+                  class="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3"
+                >
+                  <strong class="text-amber-700 text-sm block mb-1"
+                    >營業時間：</strong
+                  >
+                  <span class="whitespace-pre-line text-amber-700 text-sm"
+                    >{{ item.businessHours }}</span
+                  >
                 </div>
 
                 <!-- Address & Navigation -->
@@ -1421,15 +1450,32 @@
               </div>
 
               <!-- Address -->
-              <div>
+              <div class="relative">
                 <label class="block text-sm font-bold text-gray-500 mb-1"
                   >地址</label
                 >
                 <input
+                  id="addressAutocomplete"
                   v-model="form.address"
                   class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
                   placeholder="輸入地址以顯示導航"
+                  @blur="onAddressSelected"
+                  @input="onAddressInput"
                 />
+                <div
+                  v-if="autocompleteResults.length"
+                  class="absolute z-50 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-w-lg w-full overflow-hidden"
+                >
+                  <button
+                    v-for="item in autocompleteResults"
+                    :key="item.place_id"
+                    type="button"
+                    class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                    @mousedown.prevent="selectAutocomplete(item)"
+                  >
+                    {{ item.description }}
+                  </button>
+                </div>
               </div>
 
               <!-- Note -->
@@ -1455,6 +1501,19 @@
                   type="url"
                   class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
                   placeholder="例如：https://example.com （選填）"
+                />
+              </div>
+
+              <!-- Business Hours -->
+              <div>
+                <label class="block text-sm font-bold text-gray-500 mb-1"
+                  ><i class="fas fa-clock mr-1 text-fuji-blue"></i
+                  >營業時間</label
+                >
+                <input
+                  v-model="form.businessHours"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
+                  placeholder="例如：10:00-22:00 或 10:00-18:00, 19:00-21:00 （選填）"
                 />
               </div>
             </form>
@@ -1592,6 +1651,19 @@
           const sortableList = ref(null);
           let sortableInstance = null;
 
+          // Google Places 相關
+          let autocompleteService = null;
+          let placesService = null;
+          let geocoder = null;
+          const placesCache = {}; // 快取已查詢的地點
+          let map = null;
+          const autocompleteResults = ref([]);
+          let autocompleteTimer = null;
+          let tripImageTimer = null;
+          const selectedPlaceId = ref("");
+          const businessInfoStatus = ref("");
+          const isUserControlled = ref(false);
+
           // Forms
           const tripForm = ref({
             id: null,
@@ -1612,6 +1684,7 @@
             address: "",
             note: "",
             url: "",
+            businessHours: "",
           });
 
           // Static Data
@@ -1628,6 +1701,19 @@
           // ============ AUTH & LISTENERS ============
           onMounted(() => {
             if (configError.value) return;
+
+            // 初始化 Google Places
+            if (window.google && window.google.maps) {
+              const dummyElement = document.createElement("div");
+              dummyElement.style.display = "none";
+              document.body.appendChild(dummyElement);
+              map = new google.maps.Map(dummyElement);
+
+              autocompleteService =
+                new google.maps.places.AutocompleteService();
+              placesService = new google.maps.places.PlacesService(map);
+              geocoder = new google.maps.Geocoder();
+            }
 
             loading.value = true;
             const initAuth = async () => {
@@ -1933,15 +2019,17 @@
               return [];
             }
 
+            const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
             const days = [];
             const current = new Date(start);
             let dayNum = 1;
             const maxDays = 365; // 防止無限循環
 
             while (current <= end && dayNum <= maxDays) {
+              const dayOfWeek = weekDays[current.getDay()];
               days.push({
                 num: dayNum,
-                dateDisplay: `${current.getMonth() + 1}/${current.getDate()}`,
+                dateDisplay: `${current.getMonth() + 1}/${current.getDate()} (${dayOfWeek})`,
               });
               current.setDate(current.getDate() + 1);
               dayNum++;
@@ -1980,12 +2068,37 @@
             }
           });
 
+          // ============ AUTO-COLLAPSE TRIP IMAGE ============
+          watch(showTripImage, (newVal) => {
+            // 如果用户手动操作（isUserControlled = true），禁用自动收合
+            if (isUserControlled.value) {
+              if (tripImageTimer) {
+                clearTimeout(tripImageTimer);
+                tripImageTimer = null;
+              }
+            }
+          });
+
           // ============ ACTIONS ============
           const selectTrip = (trip) => {
             currentTrip.value = trip;
             currentDay.value = "1";
             currentTag.value = "全部";
             showExtraView.value = false;
+
+            // 重置图片状态并启用自动收合
+            showTripImage.value = true;
+            isUserControlled.value = false;
+
+            // 清除之前的定时器
+            if (tripImageTimer) {
+              clearTimeout(tripImageTimer);
+            }
+
+            // 3秒后自动收合
+            tripImageTimer = setTimeout(() => {
+              showTripImage.value = false;
+            }, 3000);
           };
           const selectLegacyTrip = () => {
             currentTrip.value = {
@@ -2175,6 +2288,7 @@
               address: "",
               note: "",
               url: "",
+              businessHours: "",
             };
             isModalOpen.value = true;
           };
@@ -2198,6 +2312,7 @@
               address: "",
               note: "",
               url: "",
+              businessHours: "",
             };
             isModalOpen.value = true;
           };
@@ -2279,6 +2394,7 @@
                       address: duplicateExtra.address || "",
                       note: duplicateExtra.note || "",
                       url: duplicateExtra.url || "",
+                      businessHours: duplicateExtra.businessHours || "",
                       tripId:
                         currentTrip.value.id === "legacy"
                           ? null
@@ -2323,6 +2439,11 @@
               }
             }
 
+            // 如果有地址但尚未抓到營業資訊，先補齊
+            if (form.value.address.trim() && !form.value.businessHours.trim()) {
+              await onAddressSelected();
+            }
+
             submitting.value = true;
 
             try {
@@ -2337,6 +2458,7 @@
                 address: form.value.address.trim(),
                 note: form.value.note.trim(),
                 url: form.value.url.trim(),
+                businessHours: form.value.businessHours.trim(),
                 tripId:
                   currentTrip.value && currentTrip.value.id === "legacy"
                     ? null
@@ -2374,7 +2496,23 @@
                 });
               }
               closeModal();
-              showAlert("保存成功", "success");
+              const hasBusinessInfo = form.value.businessHours.trim();
+              const statusLabel =
+                businessInfoStatus.value === "ok"
+                  ? "已取得營業資訊"
+                  : businessInfoStatus.value === "no-hours"
+                    ? "Google 未提供營業資訊"
+                    : businessInfoStatus.value === "no-place"
+                      ? "找不到對應地點"
+                      : businessInfoStatus.value === "error"
+                        ? "查詢失敗"
+                        : "未取得營業資訊";
+              showAlert(
+                hasBusinessInfo
+                  ? `保存成功（${statusLabel}）`
+                  : `保存成功（${statusLabel}）`,
+                "success",
+              );
             } catch (e) {
               console.error("Save error:", e);
               showAlert(`儲存失敗：${e.message || "未知錯誤"}`, "error");
@@ -2487,6 +2625,7 @@
                 address: item.address || "",
                 note: item.note || "",
                 url: item.url || "",
+                businessHours: item.businessHours || "",
                 tripId: item.tripId,
                 order: newOrder,
                 createdAt: Date.now(),
@@ -2538,6 +2677,7 @@
                 address: item.address || "",
                 note: item.note || "",
                 url: item.url || "",
+                businessHours: item.businessHours || "",
                 tripId: item.tripId,
                 day: String(dayNum),
                 order: newOrder,
@@ -2570,6 +2710,302 @@
               showAlert(`移動失敗：${e.message || "未知錯誤"}`, "error");
             } finally {
               submitting.value = false;
+            }
+          };
+
+          // ============ GOOGLE PLACES API ============
+          const fetchPlaceDetails = async (placeId) => {
+            return new Promise((resolve) => {
+              if (!placesService || !placeId) {
+                resolve(null);
+                return;
+              }
+
+              placesService.getDetails(
+                {
+                  placeId: placeId,
+                  fields: [
+                    "name",
+                    "formatted_address",
+                    "opening_hours",
+                    "formatted_phone_number",
+                    "rating",
+                    "reviews",
+                  ],
+                  language: "zh-TW",
+                },
+                (place, status) => {
+                  if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    resolve(place);
+                  } else {
+                    console.warn("Places API error:", status);
+                    resolve(null);
+                  }
+                },
+              );
+            });
+          };
+
+          const formatBusinessHours = (openingHours) => {
+            if (!openingHours || !openingHours.weekday_text) {
+              return null;
+            }
+            return openingHours.weekday_text.join("\n");
+          };
+
+          const isLikelyAddress = (text) => {
+            if (!text) return false;
+            const hasNumber = /\d/.test(text);
+            const hasAddressWord = /路|街|巷|弄|號|大道|段|鄉|鎮|市|縣|區/.test(
+              text,
+            );
+            return hasNumber && hasAddressWord;
+          };
+
+          const onAddressSelected = async () => {
+            if (!form.value.address.trim() || !placesService || !geocoder) {
+              console.info("[Places] Skip onAddressSelected", {
+                hasAddress: !!form.value.address.trim(),
+                hasPlacesService: !!placesService,
+                hasGeocoder: !!geocoder,
+              });
+              return;
+            }
+
+            try {
+              console.info("[Places] onAddressSelected start", {
+                address: form.value.address,
+                activity: form.value.activity,
+                selectedPlaceId: selectedPlaceId.value,
+              });
+              // 檢查快取
+              const cacheKey = form.value.address.toLowerCase();
+              if (placesCache[cacheKey]) {
+                const cached = placesCache[cacheKey];
+                form.value.businessHours = cached.businessHours || "";
+                console.info("[Places] Cache hit", {
+                  cacheKey,
+                  businessHours: form.value.businessHours,
+                });
+                return;
+              }
+
+              // 優先使用選取的 placeId
+              let placeId = selectedPlaceId.value;
+
+              if (!placeId) {
+                const queryText =
+                  form.value.activity.trim() && form.value.address.trim()
+                    ? `${form.value.activity} ${form.value.address}`
+                    : form.value.address;
+
+                // 先用文字查詢找 place_id
+                console.info("[Places] findPlaceFromQuery", { queryText });
+                const findResults = await new Promise((resolve) => {
+                  placesService.findPlaceFromQuery(
+                    {
+                      query: queryText,
+                      fields: ["place_id"],
+                      language: "zh-TW",
+                    },
+                    (results, status) => {
+                      console.info("[Places] findPlaceFromQuery result", {
+                        status,
+                        count: results?.length || 0,
+                      });
+                      if (
+                        status === google.maps.places.PlacesServiceStatus.OK &&
+                        results &&
+                        results.length
+                      ) {
+                        resolve(results);
+                      } else {
+                        resolve([]);
+                      }
+                    },
+                  );
+                });
+
+                if (findResults.length > 0) {
+                  placeId = findResults[0].place_id;
+                }
+              }
+
+              if (!placeId) {
+                // 使用 Geocoding 獲取 place_id
+                console.info("[Places] geocode fallback", {
+                  address: form.value.address,
+                });
+                const geocodeResults = await new Promise((resolve) => {
+                  geocoder.geocode(
+                    { address: form.value.address, language: "zh-TW" },
+                    (results, status) => {
+                      console.info("[Places] geocode result", {
+                        status,
+                        count: results?.length || 0,
+                      });
+                      if (status === google.maps.GeocoderStatus.OK) {
+                        resolve(results);
+                      } else {
+                        resolve([]);
+                      }
+                    },
+                  );
+                });
+
+                if (geocodeResults.length === 0) {
+                  businessInfoStatus.value = "no-place";
+                  return;
+                }
+
+                placeId = geocodeResults[0].place_id;
+              }
+
+              if (!placeId) return;
+              selectedPlaceId.value = placeId;
+              console.info("[Places] resolved placeId", { placeId });
+
+              // 獲取地點詳情
+              const placeDetails = await fetchPlaceDetails(placeId);
+
+              if (placeDetails) {
+                console.info("[Places] placeDetails", {
+                  name: placeDetails.name,
+                  formatted_address: placeDetails.formatted_address,
+                  hasOpeningHours: !!placeDetails.opening_hours,
+                });
+                const businessHours = formatBusinessHours(
+                  placeDetails.opening_hours,
+                );
+                form.value.businessHours = businessHours || "";
+
+                if (
+                  placeDetails.name &&
+                  !isLikelyAddress(placeDetails.name) &&
+                  (!form.value.activity.trim() ||
+                    form.value.activity.trim() === form.value.address.trim() ||
+                    isLikelyAddress(form.value.activity))
+                ) {
+                  form.value.activity = placeDetails.name;
+                }
+
+                businessInfoStatus.value = placeDetails.opening_hours
+                  ? "ok"
+                  : "no-hours";
+                console.info("[Places] business info", {
+                  status: businessInfoStatus.value,
+                  businessHours: form.value.businessHours,
+                });
+
+                // 保存到快取
+                const saveKey = (
+                  placeDetails.formatted_address || form.value.address
+                ).toLowerCase();
+                placesCache[saveKey] = {
+                  businessHours,
+                };
+              } else {
+                businessInfoStatus.value = "no-place";
+                console.warn("[Places] no placeDetails", { placeId });
+              }
+            } catch (e) {
+              console.error("Address selection error:", e);
+              businessInfoStatus.value = "error";
+              // 靜默失敗，用戶仍可手動填寫
+            }
+          };
+
+          const onAddressInput = () => {
+            if (!autocompleteService) return;
+            const input = form.value.address.trim();
+            if (!input) {
+              autocompleteResults.value = [];
+              selectedPlaceId.value = "";
+              return;
+            }
+
+            selectedPlaceId.value = "";
+
+            if (autocompleteTimer) {
+              clearTimeout(autocompleteTimer);
+            }
+
+            autocompleteTimer = setTimeout(() => {
+              autocompleteService.getPlacePredictions(
+                {
+                  input,
+                  language: "zh-TW",
+                  types: ["establishment", "geocode"],
+                },
+                (predictions, status) => {
+                  if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    autocompleteResults.value = predictions.slice(0, 6);
+                  } else {
+                    autocompleteResults.value = [];
+                  }
+                },
+              );
+            }, 250);
+          };
+
+          const selectAutocomplete = async (item) => {
+            if (!item) return;
+            autocompleteResults.value = [];
+            selectedPlaceId.value = item.place_id || "";
+            console.info("[Places] selectAutocomplete", {
+              description: item.description,
+              placeId: item.place_id,
+              types: item.types,
+            });
+            const mainText = item.structured_formatting?.main_text || "";
+            if (
+              item.types?.includes("establishment") &&
+              mainText &&
+              !isLikelyAddress(mainText) &&
+              (!form.value.activity.trim() ||
+                form.value.activity.trim() === form.value.address.trim() ||
+                isLikelyAddress(form.value.activity))
+            ) {
+              form.value.activity = mainText;
+            }
+            form.value.address = item.description || form.value.address;
+
+            const placeDetails = await fetchPlaceDetails(item.place_id);
+            if (placeDetails) {
+              console.info("[Places] placeDetails (from select)", {
+                name: placeDetails.name,
+                formatted_address: placeDetails.formatted_address,
+                hasOpeningHours: !!placeDetails.opening_hours,
+              });
+              const businessHours = formatBusinessHours(
+                placeDetails.opening_hours,
+              );
+              form.value.businessHours = businessHours || "";
+              if (
+                placeDetails.name &&
+                !isLikelyAddress(placeDetails.name) &&
+                (!form.value.activity.trim() ||
+                  form.value.activity.trim() === form.value.address.trim() ||
+                  isLikelyAddress(form.value.activity))
+              ) {
+                form.value.activity = placeDetails.name;
+              }
+
+              placesCache[form.value.address.toLowerCase()] = {
+                businessHours,
+              };
+              businessInfoStatus.value = placeDetails.opening_hours
+                ? "ok"
+                : "no-hours";
+              console.info("[Places] business info (from select)", {
+                status: businessInfoStatus.value,
+                businessHours: form.value.businessHours,
+              });
+            } else {
+              businessInfoStatus.value = "no-place";
+              console.warn("[Places] no placeDetails (from select)", {
+                placeId: item.place_id,
+              });
             }
           };
 
@@ -2635,6 +3071,10 @@
             moveToExtra,
             moveToDay,
             findDuplicateAddressInExtra,
+            onAddressSelected,
+            onAddressInput,
+            autocompleteResults,
+            selectAutocomplete,
           };
         },
       }).mount("#app");
