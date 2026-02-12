@@ -93,10 +93,10 @@
             <div class="flex justify-between items-center">
               <div>
                 <h1 class="text-2xl sm:text-3xl font-bold tracking-wider">
-                  我的旅程
+                  旅程
                 </h1>
                 <p class="text-blue-100 mt-1 text-xs sm:text-sm">
-                  <i class="fas fa-suitcase-rolling mr-2"></i>選擇或建立一個行程
+                  <i class="fas fa-suitcase-rolling mr-2"></i>選擇或建立一個旅程
                 </p>
               </div>
             </div>
@@ -107,13 +107,13 @@
                 @click="tripFilter = 'upcoming'"
                 :class="['flex-1 py-2 rounded-lg text-sm font-bold transition-all duration-200 min-w-fit', tripFilter === 'upcoming' ? 'bg-white text-fuji-blue shadow-sm' : 'text-blue-200 hover:text-white']"
               >
-                <i class="fas fa-plane-departure mr-1"></i> 即將出發
+                <i class="fa-solid fa-location-arrow mr-1"></i>即將出發
               </button>
               <button
                 @click="tripFilter = 'all'"
                 :class="['flex-1 py-2 rounded-lg text-sm font-bold transition-all duration-200 min-w-fit', tripFilter === 'all' ? 'bg-white text-fuji-blue shadow-sm' : 'text-blue-200 hover:text-white']"
               >
-                <i class="fas fa-list mr-1"></i> 全部行程
+                <i class="fas fa-list mr-1"></i> 全部旅程
               </button>
               <button
                 @click="tripFilter = 'locations'"
@@ -565,9 +565,7 @@
               @click="showTripImage = !showTripImage; isUserControlled = true"
               class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors flex-shrink-0"
             >
-              <i
-                :class="['fas', showTripImage ? 'fa-chevron-up' : 'fa-chevron-down']"
-              ></i>
+              <i class="fa-solid fa-image"></i>
             </button>
           </div>
 
@@ -2027,7 +2025,7 @@
           // ============ ACTIONS ============
           const selectTrip = (trip) => {
             currentTrip.value = trip;
-            currentDay.value = "1";
+            currentDay.value = "all";
             currentTag.value = "全部";
             showExtraView.value = false;
 
@@ -2052,7 +2050,7 @@
               startDate: "2024-01-01",
               endDate: "2024-01-03",
             };
-            currentDay.value = "1";
+            currentDay.value = "all";
             currentTag.value = "全部";
             showExtraView.value = false;
           };
