@@ -260,12 +260,23 @@
                     v-if="item.note"
                     class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg mt-3"
                   >
-                    <p
-                      class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap"
-                    >
-                      <i class="fas fa-info-circle text-yellow-500 mr-1"></i> {{
-                      item.note }}
-                    </p>
+                    <div class="flex items-start justify-between gap-2">
+                      <p
+                        class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap flex-1"
+                        :class="expandedNotes.includes(item.id) ? '' : 'line-clamp-2'"
+                      >
+                        <i class="fas fa-info-circle text-yellow-500 mr-1"></i>
+                        {{ item.note }}
+                      </p>
+                      <button
+                        @click="toggleNoteExpand(item.id)"
+                        class="text-yellow-600 hover:text-yellow-700 flex-shrink-0 text-sm"
+                      >
+                        <i
+                          :class="['fas', expandedNotes.includes(item.id) ? 'fa-chevron-up' : 'fa-chevron-down']"
+                        ></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -735,12 +746,26 @@
                     v-if="item.businessHours"
                     class="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3"
                   >
-                    <strong class="text-amber-700 text-sm block mb-1"
-                      >營業時間：</strong
-                    >
-                    <span class="whitespace-pre-line text-amber-700 text-sm"
-                      >{{ item.businessHours }}</span
-                    >
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex-1">
+                        <strong class="text-amber-700 text-sm block mb-1"
+                          >營業時間：</strong
+                        >
+                        <span
+                          v-if="expandedBusinessHours.includes(item.id)"
+                          class="whitespace-pre-line text-amber-700 text-sm"
+                          >{{ item.businessHours }}</span
+                        >
+                      </div>
+                      <button
+                        @click="toggleBusinessHoursExpand(item.id)"
+                        class="text-amber-600 hover:text-amber-700 flex-shrink-0 text-sm"
+                      >
+                        <i
+                          :class="['fas', expandedBusinessHours.includes(item.id) ? 'fa-chevron-up' : 'fa-chevron-down']"
+                        ></i>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Address & Navigation -->
@@ -818,12 +843,23 @@
                     v-if="item.note"
                     class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg mt-3"
                   >
-                    <p
-                      class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap"
-                    >
-                      <i class="fas fa-info-circle text-yellow-500 mr-1"></i> {{
-                      item.note }}
-                    </p>
+                    <div class="flex items-start justify-between gap-2">
+                      <p
+                        class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap flex-1"
+                        :class="expandedNotes.includes(item.id) ? '' : 'line-clamp-2'"
+                      >
+                        <i class="fas fa-info-circle text-yellow-500 mr-1"></i>
+                        {{ item.note }}
+                      </p>
+                      <button
+                        @click="toggleNoteExpand(item.id)"
+                        class="text-yellow-600 hover:text-yellow-700 flex-shrink-0 text-sm"
+                      >
+                        <i
+                          :class="['fas', expandedNotes.includes(item.id) ? 'fa-chevron-up' : 'fa-chevron-down']"
+                        ></i>
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Toggle Details Button -->
@@ -941,12 +977,26 @@
                   v-if="item.businessHours"
                   class="mb-3 bg-amber-50 border border-amber-200 rounded-xl p-3"
                 >
-                  <strong class="text-amber-700 text-sm block mb-1"
-                    >營業時間：</strong
-                  >
-                  <span class="whitespace-pre-line text-amber-700 text-sm"
-                    >{{ item.businessHours }}</span
-                  >
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1">
+                      <strong class="text-amber-700 text-sm block mb-1"
+                        >營業時間：</strong
+                      >
+                      <span
+                        v-if="expandedBusinessHours.includes(item.id)"
+                        class="whitespace-pre-line text-amber-700 text-sm"
+                        >{{ item.businessHours }}</span
+                      >
+                    </div>
+                    <button
+                      @click="toggleBusinessHoursExpand(item.id)"
+                      class="text-amber-600 hover:text-amber-700 flex-shrink-0 text-sm"
+                    >
+                      <i
+                        :class="['fas', expandedBusinessHours.includes(item.id) ? 'fa-chevron-up' : 'fa-chevron-down']"
+                      ></i>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Address & Navigation -->
@@ -1025,12 +1075,23 @@
                   v-if="item.note"
                   class="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r-lg mt-3"
                 >
-                  <p
-                    class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap"
-                  >
-                    <i class="fas fa-info-circle text-yellow-500 mr-1"></i> {{
-                    item.note }}
-                  </p>
+                  <div class="flex items-start justify-between gap-2">
+                    <p
+                      class="text-gray-700 text-base leading-relaxed whitespace-pre-wrap flex-1"
+                      :class="expandedNotes.includes(item.id) ? '' : 'line-clamp-2'"
+                    >
+                      <i class="fas fa-info-circle text-yellow-500 mr-1"></i> {{
+                      item.note }}
+                    </p>
+                    <button
+                      @click="toggleNoteExpand(item.id)"
+                      class="text-yellow-600 hover:text-yellow-700 flex-shrink-0 text-sm"
+                    >
+                      <i
+                        :class="['fas', expandedNotes.includes(item.id) ? 'fa-chevron-up' : 'fa-chevron-down']"
+                      ></i>
+                    </button>
+                  </div>
                 </div>
 
                 <!-- Toggle Details Button -->
@@ -1453,11 +1514,12 @@
                   ><i class="fas fa-clock mr-1 text-fuji-blue"></i
                   >營業時間</label
                 >
-                <input
+                <textarea
                   v-model="form.businessHours"
-                  class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors"
-                  placeholder="例如：10:00-22:00 或 10:00-18:00, 19:00-21:00 （選填）"
-                />
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-lg focus:outline-none focus:ring-2 focus:ring-fuji-blue focus:bg-white transition-colors resize-none"
+                  placeholder="例如：週一至週五 10:00-22:00\n週六週日 09:00-23:00（選填）"
+                  rows="3"
+                ></textarea>
               </div>
             </form>
           </div>
@@ -1583,6 +1645,8 @@
           const isModalOpen = ref(false);
           const isEditing = ref(false);
           const expandedItems = ref([]);
+          const expandedNotes = ref([]);
+          const expandedBusinessHours = ref([]);
           const imageModalUrl = ref(null);
           const showTripImage = ref(true);
           const showExtraView = ref(false);
@@ -2510,6 +2574,18 @@
               expandedItems.value = expandedItems.value.filter((i) => i !== id);
             else expandedItems.value.push(id);
           };
+          const toggleNoteExpand = (id) => {
+            if (expandedNotes.value.includes(id))
+              expandedNotes.value = expandedNotes.value.filter((i) => i !== id);
+            else expandedNotes.value.push(id);
+          };
+          const toggleBusinessHoursExpand = (id) => {
+            if (expandedBusinessHours.value.includes(id))
+              expandedBusinessHours.value = expandedBusinessHours.value.filter(
+                (i) => i !== id,
+              );
+            else expandedBusinessHours.value.push(id);
+          };
           const formatDate = (dateStr) => {
             if (!dateStr) return "";
             const d = new Date(dateStr);
@@ -2996,6 +3072,8 @@
             isModalOpen,
             isEditing,
             expandedItems,
+            expandedNotes,
+            expandedBusinessHours,
             imageModalUrl,
             showScheduleImages,
             tripForm,
@@ -3027,6 +3105,8 @@
             submitForm,
             deleteItem,
             toggleExpand,
+            toggleNoteExpand,
+            toggleBusinessHoursExpand,
             formatDate,
             calculateDuration,
             getCategoryColor,
