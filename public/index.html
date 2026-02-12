@@ -2237,7 +2237,18 @@
           };
           const openEditModal = (item) => {
             isEditing.value = true;
-            form.value = { ...item, isExtra: false };
+            form.value = {
+              id: item.id,
+              isExtra: false,
+              day: item.day || "1",
+              activity: item.activity || "",
+              tag: item.tag || "景點",
+              bookingTime: item.bookingTime || "",
+              address: item.address || "",
+              note: item.note || "",
+              url: item.url || "",
+              businessHours: item.businessHours || "",
+            };
             isModalOpen.value = true;
           };
           const openAddExtraModal = () => {
@@ -2261,7 +2272,18 @@
           };
           const openEditExtraModal = (item) => {
             isEditing.value = true;
-            form.value = { ...item, isExtra: true };
+            form.value = {
+              id: item.id,
+              isExtra: true,
+              day: item.day || "1",
+              activity: item.activity || "",
+              tag: item.tag || "景點",
+              bookingTime: item.bookingTime || "",
+              address: item.address || "",
+              note: item.note || "",
+              url: item.url || "",
+              businessHours: item.businessHours || "",
+            };
             isModalOpen.value = true;
           };
           const closeModal = () => (isModalOpen.value = false);
