@@ -36,6 +36,8 @@
       } from "./shared/category-map.js";
       import { createGooglePlacesIntegration } from "./integrations/google-places.js";
       import { createTripsModule } from "./modules/trips.js";
+      import { createScheduleModule } from "./modules/schedule.js";
+      import { createExtraModule } from "./modules/extra.js";
 
       const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
@@ -111,7 +113,6 @@
 
           // Sortable
           const sortableList = ref(null);
-          let sortableInstance = null;
 
           // Google Places 相關
           const autocompleteResults = ref([]);
@@ -201,6 +202,63 @@
               isTripExpired,
             },
           });
+          const {
+            filteredData,
+            tripDays,
+            setSchedules,
+          } = createScheduleModule({
+            refs: {
+              allSchedules,
+              currentTrip,
+              currentDay,
+              currentTag,
+              sortableList,
+            },
+            deps: {
+              computed,
+              watch,
+              nextTick,
+              db,
+              writeBatch,
+              doc,
+            },
+          });
+          const {
+            filteredExtraData,
+            filteredLocationData,
+            openAddExtraModal,
+            openEditExtraModal,
+            findDuplicateAddressInExtra,
+            moveToExtra,
+            moveToDay,
+            setExtraSchedules,
+          } = createExtraModule({
+            refs: {
+              allExtraSchedules,
+              allSchedules,
+              currentTrip,
+              currentDay,
+              currentTag,
+              showExtraView,
+              showGlobalExtra,
+              extraSearchQuery,
+              extraSearchTag,
+              isEditing,
+              isModalOpen,
+              form,
+              user,
+              submitting,
+            },
+            deps: {
+              computed,
+              db,
+              doc,
+              setDoc,
+              updateDoc,
+              deleteDoc,
+              showAlert,
+            },
+          });
 
           // Static Data
           const filterTags = [
@@ -284,10 +342,12 @@
             onSnapshot(
               qSchedules,
               (snapshot) => {
-                allSchedules.value = snapshot.docs.map((doc) => ({
-                  id: doc.id,
-                  ...doc.data(),
-                }));
+                setSchedules(
+                  snapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                  })),
+                );
                 schedulesLoaded = true;
                 checkLoadingComplete();
               },
@@ -309,10 +369,10 @@
             onSnapshot(
               qExtraSchedules,
               (snapshot) => {
-                allExtraSchedules.value = snapshot.docs.map((doc) => ({
+                setExtraSchedules(snapshot.docs.map((doc) => ({
                   id: doc.id,
                   ...doc.data(),
-                }));
+                })));
                 extraSchedulesLoaded = true;
                 checkLoadingComplete();
               },
@@ -333,197 +393,6 @@
           // ============ HELPERS & COMPUTED ============
           const retryLoad = () => window.location.reload();
 
-          // 相容舊資料：優先使用 imageUrl，如果沒有則使用 imageBase64
-          const filteredData = computed(() => {
-            if (!currentTrip.value) return [];
-            const targetTripId = currentTrip.value.id;
-            const isLegacy = targetTripId === "legacy";
-            const currentDayStr = String(currentDay.value);
-            const showAll = currentTag.value === "全部";
-            const showAllDays = currentDayStr === "all";
-
-            const data = allSchedules.value.filter((item) => {
-              // 檢查 day 匹配：如果選擇 "all" 則顯示所有天
-              if (!showAllDays && String(item.day) !== currentDayStr)
-                return false;
-
-              // 檢查 trip 匹配
-              const isTripMatch = isLegacy
-                ? !item.tripId
-                : item.tripId === targetTripId;
-              if (!isTripMatch) return false;
-
-              // 檢查標籤匹配
-              return showAll || item.tag === currentTag.value;
-            });
-
-            // 使用穩定排序
-            return data.sort((a, b) => {
-              const orderA = a.order ?? Infinity;
-              const orderB = b.order ?? Infinity;
-              if (orderA !== orderB) return orderA - orderB;
-              return (a.bookingTime || "99:99").localeCompare(
-                b.bookingTime || "99:99",
-              );
-            });
-          });
-
-          const filteredExtraData = computed(() => {
-            if (!currentTrip.value && !showGlobalExtra.value) return [];
-
-            const showAll = currentTag.value === "全部";
-            let data = [];
-
-            if (showGlobalExtra.value) {
-              // 顯示所有旅程的額外行程
-              data = allExtraSchedules.value.filter((item) => {
-                // 檢查標籤匹配
-                return showAll || item.tag === currentTag.value;
-              });
-            } else {
-              // 只顯示目前旅程的額外行程
-              const targetTripId = currentTrip.value.id;
-              const isLegacy = targetTripId === "legacy";
-
-              data = allExtraSchedules.value.filter((item) => {
-                // 檢查 trip 匹配
-                const isTripMatch = isLegacy
-                  ? !item.tripId
-                  : item.tripId === targetTripId;
-                if (!isTripMatch) return false;
-
-                // 在單個行程視圖中，過濾掉已加到日程的項目
-                if (item.usedInSchedule) return false;
-
-                // 檢查標籤匹配
-                return showAll || item.tag === currentTag.value;
-              });
-            }
-
-            // 應用搜尋篩選
-            if (extraSearchQuery.value.trim()) {
-              const query = extraSearchQuery.value.toLowerCase();
-              data = data.filter((item) => {
-                return (
-                  item.activity.toLowerCase().includes(query) ||
-                  (item.address || "").toLowerCase().includes(query) ||
-                  (item.note || "").toLowerCase().includes(query)
-                );
-              });
-            }
-
-            // 應用標籤篩選
-            if (extraSearchTag.value) {
-              data = data.filter((item) => item.tag === extraSearchTag.value);
-            }
-
-            // 使用穩定排序
-            return data.sort((a, b) => {
-              const orderA = a.order ?? Infinity;
-              const orderB = b.order ?? Infinity;
-              if (orderA !== orderB) return orderA - orderB;
-              return (a.bookingTime || "99:99").localeCompare(
-                b.bookingTime || "99:99",
-              );
-            });
-          });
-
-          const filteredLocationData = computed(() => {
-            // 顯示所有旅程的額外行程（全域視圖）
-            let data = allExtraSchedules.value;
-
-            // 應用搜尋篩選
-            if (extraSearchQuery.value.trim()) {
-              const query = extraSearchQuery.value.toLowerCase();
-              data = data.filter((item) => {
-                return (
-                  item.activity.toLowerCase().includes(query) ||
-                  (item.address || "").toLowerCase().includes(query) ||
-                  (item.note || "").toLowerCase().includes(query)
-                );
-              });
-            }
-
-            // 應用標籤篩選
-            if (extraSearchTag.value) {
-              data = data.filter((item) => item.tag === extraSearchTag.value);
-            }
-
-            // 使用穩定排序
-            return data.sort((a, b) => {
-              const orderA = a.order ?? Infinity;
-              const orderB = b.order ?? Infinity;
-              if (orderA !== orderB) return orderA - orderB;
-              return (a.bookingTime || "99:99").localeCompare(
-                b.bookingTime || "99:99",
-              );
-            });
-          });
-
-          const tripDays = computed(() => {
-            if (
-              !currentTrip.value ||
-              !currentTrip.value.startDate ||
-              !currentTrip.value.endDate
-            ) {
-              return [];
-            }
-            const start = new Date(currentTrip.value.startDate);
-            const end = new Date(currentTrip.value.endDate);
-
-            // 驗證日期有效性
-            if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
-              return [];
-            }
-
-            const weekDays = ["日", "一", "二", "三", "四", "五", "六"];
-            const days = [];
-            const current = new Date(start);
-            let dayNum = 1;
-            const maxDays = 365; // 防止無限循環
-
-            while (current <= end && dayNum <= maxDays) {
-              const dayOfWeek = weekDays[current.getDay()];
-              days.push({
-                num: dayNum,
-                dateDisplay: `${current.getMonth() + 1}/${current.getDate()} (${dayOfWeek})`,
-              });
-              current.setDate(current.getDate() + 1);
-              dayNum++;
-            }
-            return days;
-          });
-
-          // ============ SORTING LOGIC ============
-          watch([filteredData, currentDay, currentTag], async () => {
-            await nextTick();
-            if (sortableList.value) {
-              if (sortableInstance) sortableInstance.destroy();
-              sortableInstance = new Sortable(sortableList.value, {
-                handle: ".handle",
-                animation: 150,
-                ghostClass: "sortable-ghost",
-                dragClass: "sortable-drag",
-                onEnd: async (evt) => {
-                  if (evt.newIndex === evt.oldIndex) return;
-                  const newOrderIds = Array.from(
-                    sortableList.value.children,
-                  ).map((el) => el.getAttribute("data-id"));
-                  const batch = writeBatch(db);
-                  newOrderIds.forEach((id, index) => {
-                    if (!id) return;
-                    const ref = doc(db, "travel_schedule", id);
-                    batch.update(ref, { order: index });
-                  });
-                  try {
-                    await batch.commit();
-                  } catch (e) {
-                    console.error("Sort error", e);
-                  }
-                },
-              });
-            }
-          });
 
           // ============ AUTO-COLLAPSE TRIP IMAGE ============
           watch(showTripImage, (newVal) => {
@@ -570,72 +439,7 @@
             };
             isModalOpen.value = true;
           };
-          const openAddExtraModal = () => {
-            isEditing.value = false;
-            form.value = {
-              id: null,
-              isExtra: true,
-              day:
-                currentDay.value === "all" || !currentDay.value
-                  ? "1"
-                  : currentDay.value,
-              activity: "",
-              tag: "景點",
-              bookingTime: "",
-              address: "",
-              note: "",
-              url: "",
-              businessHours: "",
-            };
-            isModalOpen.value = true;
-          };
-          const openEditExtraModal = (item) => {
-            isEditing.value = true;
-            form.value = {
-              id: item.id,
-              isExtra: true,
-              day: item.day || "1",
-              activity: item.activity || "",
-              tag: item.tag || "景點",
-              bookingTime: item.bookingTime || "",
-              address: item.address || "",
-              note: item.note || "",
-              url: item.url || "",
-              businessHours: item.businessHours || "",
-            };
-            isModalOpen.value = true;
-          };
           const closeModal = () => (isModalOpen.value = false);
-
-          // 查找相同地址的額外行程項目
-          const findDuplicateAddressInExtra = (address) => {
-            if (!address || !address.trim()) return null;
-            const trimmedAddress = address.trim().toLowerCase();
-
-            if (showGlobalExtra.value) {
-              // 全域查找
-              return allExtraSchedules.value.find(
-                (item) =>
-                  item.address &&
-                  item.address.trim().toLowerCase() === trimmedAddress,
-              );
-            } else if (currentTrip.value) {
-              // 只在目前旅程查找
-              const targetTripId = currentTrip.value.id;
-              const isLegacy = targetTripId === "legacy";
-              return allExtraSchedules.value.find((item) => {
-                const isTripMatch = isLegacy
-                  ? !item.tripId
-                  : item.tripId === targetTripId;
-                return (
-                  isTripMatch &&
-                  item.address &&
-                  item.address.trim().toLowerCase() === trimmedAddress
-                );
-              });
-            }
-            return null;
-          };
 
           const submitForm = async () => {
             if (!user.value) return;
@@ -840,116 +644,6 @@
                 (i) => i !== id,
               );
             else expandedBusinessHours.value.push(id);
-          };
-
-          // 移動一般行程到額外行程
-          const moveToExtra = async (item) => {
-            if (!user.value || !item.id) return;
-
-            try {
-              submitting.value = true;
-
-              // 計算新的排序順序
-              const currentExtraItems = filteredExtraData.value;
-              const newOrder =
-                currentExtraItems.length > 0
-                  ? Math.max(...currentExtraItems.map((i) => i.order ?? 0)) + 1
-                  : 0;
-
-              // 在額外行程集合中創建新項目
-              const newExtraItem = {
-                activity: item.activity,
-                tag: item.tag,
-                bookingTime: item.bookingTime || "",
-                address: item.address || "",
-                note: item.note || "",
-                url: item.url || "",
-                businessHours: item.businessHours || "",
-                tripId: item.tripId,
-                order: newOrder,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-              };
-
-              const newId = String(Date.now());
-              await setDoc(doc(db, "travel_extra", newId), {
-                ...newExtraItem,
-                id: newId,
-              });
-
-              // 刪除原來的一般行程項目
-              await deleteDoc(doc(db, "travel_schedule", item.id));
-
-              showAlert("已移至額外行程", "success");
-            } catch (e) {
-              console.error("Move to extra error:", e);
-              showAlert(`移動失敗：${e.message || "未知錯誤"}`, "error");
-            } finally {
-              submitting.value = false;
-            }
-          };
-
-          // 移動額外行程到一般行程的特定天數
-          const moveToDay = async (item, event) => {
-            const dayNum = event.target.value;
-            if (!user.value || !item.id || !dayNum) return;
-
-            try {
-              submitting.value = true;
-
-              // 計算新的排序順序
-              const currentDayItems = allSchedules.value.filter(
-                (schedule) =>
-                  schedule.tripId === item.tripId &&
-                  String(schedule.day) === String(dayNum),
-              );
-              const newOrder =
-                currentDayItems.length > 0
-                  ? Math.max(...currentDayItems.map((i) => i.order ?? 0)) + 1
-                  : 0;
-
-              // 在一般行程集合中創建新項目
-              const newScheduleItem = {
-                activity: item.activity,
-                tag: item.tag,
-                bookingTime: item.bookingTime || "",
-                address: item.address || "",
-                note: item.note || "",
-                url: item.url || "",
-                businessHours: item.businessHours || "",
-                tripId: item.tripId,
-                day: String(dayNum),
-                order: newOrder,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-              };
-
-              const newId = String(Date.now());
-              await setDoc(doc(db, "travel_schedule", newId), {
-                ...newScheduleItem,
-                id: newId,
-              });
-
-              // 標記額外行程已被加入日程（但不刪除，以便在首頁全部地點仍可看到）
-              await updateDoc(doc(db, "travel_extra", item.id), {
-                usedInSchedule: true,
-                updatedAt: Date.now(),
-              });
-
-              // 重置下拉選單
-              event.target.value = "";
-
-              showAlert(`已加到 Day ${dayNum}`, "success");
-
-              // 切換到該天的視圖
-              currentDay.value = String(dayNum);
-              showExtraView.value = false;
-            } catch (e) {
-              console.error("Move to day error:", e);
-              showAlert(`移動失敗：${e.message || "未知錯誤"}`, "error");
-            } finally {
-              submitting.value = false;
-            }
           };
 
           return {
