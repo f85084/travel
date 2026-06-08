@@ -1,0 +1,118 @@
+schema: spec-driven
+
+context: |
+  # Project Context
+  
+  ## Project Name
+  
+  TripFlow
+  
+  ## Summary
+  
+  TripFlow is a multi-day travel planning tool built on top of an existing single-page frontend.
+  It helps users manage trips, daily schedules, candidate locations, and place details in one place.
+  
+  This is a brownfield project.
+  The current system already supports real trip management workflows, but the code structure and information hierarchy need improvement before further productization.
+  
+  ## Product Goal
+  
+  The product is not a travel content site.
+  It is a travel planning workspace focused on:
+  
+  - managing multiple trips
+  - arranging daily schedules
+  - separating confirmed itinerary items from candidate places
+  - enriching place information with Google Places
+  - reducing the friction of reordering and adjusting plans
+  
+  ## Users
+  
+  Primary users:
+  
+  - people planning 3-7 day self-guided trips
+  - people collecting many restaurants, attractions, lodging, and transport options
+  - people who want one place to organize confirmed plans and backups
+  
+  Secondary users:
+  
+  - family trip organizers
+  - small trusted circles sharing a planning tool without a formal account system
+  
+  ## Current Stack
+  
+  - Frontend: Vue 3 via CDN
+  - UI: Tailwind CSS via CDN, Element Plus, Font Awesome
+  - Drag and drop: SortableJS
+  - Build/dev server: Vite
+  - Data: Firebase Authentication (anonymous), Firestore, Firebase Hosting
+  - External integration: Google Maps Places API
+  
+  ## Current Architecture
+  
+  - `public/index.html` contains the main templates and large portions of the UI structure
+  - `public/js/app.js` contains most of the application logic
+  - `public/css/styles.css` contains shared styles and utility-level customizations
+  - `public/config.js` contains local runtime configuration for Firebase and Google Maps
+  
+  The current architecture prioritizes speed of iteration over maintainability.
+  
+  ## Key Constraints
+  
+  - This project is intended for personal or trusted-circle usage, not public multi-tenant SaaS
+  - There is no current requirement to add full login-based ownership or collaboration
+  - Existing behavior should be preserved while refactoring structure
+  - The project should become easier to demo in interviews without losing practical usability
+  
+  ## Existing Functional Areas
+  
+  - trip management
+  - daily itinerary management
+  - candidate place pool
+  - global locations view
+  - Google Places enrichment
+  - drag-and-drop ordering
+  - real-time data sync with Firestore
+  
+  ## Current Pain Points
+  
+  - `public/js/app.js` is too large and mixes concerns
+  - `public/index.html` carries too many view responsibilities
+  - homepage behaves more like a list than a dashboard
+  - confirmed itinerary items and candidate items are not clearly separated in product hierarchy
+  - deployment path and build path are not yet fully aligned
+  
+  ## Product Direction
+  
+  The desired direction is:
+  
+  - position the product as a planning dashboard, not a generic travel page
+  - improve the homepage into a trip overview
+  - make confirmed schedule vs. candidate pool much clearer
+  - modularize the code to reduce future change cost
+  - prepare the app for a stronger interview-demo narrative
+  
+  ## Development Conventions
+  
+  - prefer incremental refactoring over large rewrites
+  - preserve current behavior before visual redesign
+  - separate presentational helpers, data modules, and external integrations
+  - keep specs aligned with real current behavior before drafting future changes
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours

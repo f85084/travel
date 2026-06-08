@@ -76,3 +76,5 @@ node_modules/
 #忽略含有 API Key 的設定檔
 
 config.js
+.spectra/
+openspec/.vector-search.db*
