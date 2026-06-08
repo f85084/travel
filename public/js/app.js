@@ -35,6 +35,7 @@
         hasParkingInfo,
       } from "./shared/category-map.js";
       import { createGooglePlacesIntegration } from "./integrations/google-places.js";
+      import { createTripsModule } from "./modules/trips.js";
 
       const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
 
@@ -114,7 +115,6 @@
 
           // Google Places 相關
           const autocompleteResults = ref([]);
-          let tripImageTimer = null;
           const selectedPlaceId = ref("");
           const businessInfoStatus = ref("");
           const isUserControlled = ref(false);
@@ -152,6 +152,53 @@
               autocompleteResults,
               selectedPlaceId,
               businessInfoStatus,
+            },
+          });
+          const {
+            filteredTripsList,
+            hasLegacyData,
+            getTripImageUrl,
+            selectTrip,
+            selectLegacyTrip,
+            openTripModal,
+            openEditTripModal,
+            closeTripModal,
+            openImageModal,
+            handleImageUpload,
+            submitTrip: submitTripRecord,
+            confirmDeleteTrip,
+            setTrips,
+          } = createTripsModule({
+            refs: {
+              allTrips,
+              allSchedules,
+              currentTrip,
+              currentDay,
+              currentTag,
+              tripFilter,
+              isTripModalOpen,
+              isEditingTrip,
+              tripForm,
+              showTripImage,
+              showExtraView,
+              submitting,
+              isUserControlled,
+              imageModalUrl,
+              loading,
+            },
+            deps: {
+              computed,
+              db,
+              storage,
+              setDoc,
+              updateDoc,
+              doc,
+              writeBatch,
+              storageRef,
+              deleteObject,
+              showAlert,
+              showConfirm,
+              isTripExpired,
             },
           });
 
@@ -211,9 +258,11 @@
             onSnapshot(
               qTrips,
               (snapshot) => {
-                allTrips.value = snapshot.docs
-                  .map((doc) => ({ id: doc.id, ...doc.data() }))
-                  .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                setTrips(
+                  snapshot.docs
+                    .map((doc) => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+                );
                 tripsLoaded = true;
                 checkLoadingComplete();
               },
@@ -285,21 +334,6 @@
           const retryLoad = () => window.location.reload();
 
           // 相容舊資料：優先使用 imageUrl，如果沒有則使用 imageBase64
-          const getTripImageUrl = (trip) =>
-            trip.imageUrl || trip.imageBase64 || null;
-
-          const filteredTripsList = computed(() => {
-            if (tripFilter.value === "all") {
-              return allTrips.value;
-            } else {
-              return allTrips.value.filter((trip) => !isTripExpired(trip));
-            }
-          });
-
-          const hasLegacyData = computed(() =>
-            allSchedules.value.some((item) => !item.tripId),
-          );
-
           const filteredData = computed(() => {
             if (!currentTrip.value) return [];
             const targetTripId = currentTrip.value.id;
@@ -495,208 +529,13 @@
           watch(showTripImage, (newVal) => {
             // 如果用户手动操作（isUserControlled = true），禁用自动收合
             if (isUserControlled.value) {
-              if (tripImageTimer) {
-                clearTimeout(tripImageTimer);
-                tripImageTimer = null;
-              }
+              // trip image auto-collapse is now handled inside trips module
             }
           });
 
           // ============ ACTIONS ============
-          const selectTrip = (trip) => {
-            currentTrip.value = trip;
-            currentDay.value = "all";
-            currentTag.value = "全部";
-            showExtraView.value = false;
-
-            // 重置图片状态并启用自动收合
-            showTripImage.value = true;
-            isUserControlled.value = false;
-
-            // 清除之前的定时器
-            if (tripImageTimer) {
-              clearTimeout(tripImageTimer);
-            }
-
-            // 3秒后自动收合
-            tripImageTimer = setTimeout(() => {
-              showTripImage.value = false;
-            }, 3000);
-          };
-          const selectLegacyTrip = () => {
-            currentTrip.value = {
-              id: "legacy",
-              name: "未分類行程",
-              startDate: "2024-01-01",
-              endDate: "2024-01-03",
-            };
-            currentDay.value = "all";
-            currentTag.value = "全部";
-            showExtraView.value = false;
-          };
-
-          const openTripModal = () => {
-            isEditingTrip.value = false;
-            tripForm.value = {
-              id: null,
-              name: "",
-              startDate: "",
-              endDate: "",
-              imageUrl: "",
-              imageBase64: "",
-              imageFile: null,
-              url: "",
-            };
-            isTripModalOpen.value = true;
-          };
-          const openEditTripModal = (trip) => {
-            isEditingTrip.value = true;
-            // 相容舊資料：保留 imageBase64 如果存在
-            tripForm.value = {
-              ...trip,
-              imageUrl: trip.imageUrl || "",
-              imageBase64: trip.imageBase64 || "",
-              imageFile: null,
-            };
-            isTripModalOpen.value = true;
-          };
-          const closeTripModal = () => (isTripModalOpen.value = false);
-
-          const openImageModal = (url) => {
-            imageModalUrl.value = url;
-          };
-
-          const handleImageUpload = (event) => {
-            const file = event.target.files?.[0];
-            if (!file) return;
-
-            // Validate file type
-            if (!file.type.startsWith("image/")) {
-              showAlert("請選擇圖片檔案", "error");
-              return;
-            }
-
-            // Check file size (limit to 5MB)
-            const maxSize = 5 * 1024 * 1024;
-            if (file.size > maxSize) {
-              showAlert("圖片大小不能超過 5MB", "error");
-              event.target.value = ""; // Clear input
-              return;
-            }
-
-            tripForm.value.imageFile = file;
-
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              tripForm.value.imageUrl = e.target?.result || "";
-            };
-            reader.onerror = () => {
-              showAlert("圖片讀取失敗", "error");
-              event.target.value = "";
-            };
-            reader.readAsDataURL(file);
-          };
-
           const submitTrip = async () => {
-            if (!user.value) return;
-
-            // 驗證日期
-            const start = new Date(tripForm.value.startDate);
-            const end = new Date(tripForm.value.endDate);
-            if (start > end) {
-              showAlert("結束日期必須在開始日期之後", "error");
-              return;
-            }
-
-            submitting.value = true;
-            try {
-              let imageBase64 = tripForm.value.imageBase64 || "";
-              let imageUrl = tripForm.value.imageUrl || "";
-
-              // 如果選擇了新檔案，將其轉換為 Base64 存儲
-              if (tripForm.value.imageFile instanceof File) {
-                try {
-                  imageBase64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => reject(new Error("圖片讀取失敗"));
-                    reader.readAsDataURL(tripForm.value.imageFile);
-                  });
-                  imageUrl = ""; // 清除 imageUrl，使用 imageBase64
-                } catch (error) {
-                  console.error("Image conversion error:", error);
-                  showAlert(error.message || "圖片轉換失敗", "error");
-                  submitting.value = false;
-                  return;
-                }
-              }
-
-              const tripData = {
-                name: tripForm.value.name.trim(),
-                startDate: tripForm.value.startDate,
-                endDate: tripForm.value.endDate,
-                imageUrl,
-                imageBase64,
-                url: tripForm.value.url.trim(),
-                updatedAt: Date.now(),
-              };
-
-              if (isEditingTrip.value && tripForm.value.id) {
-                await updateDoc(doc(db, "travel", tripForm.value.id), tripData);
-              } else {
-                const newId = String(Date.now()); // 使用時間戳作為 ID 更安全
-                await setDoc(doc(db, "travel", newId), {
-                  ...tripData,
-                  id: newId,
-                  createdAt: Date.now(),
-                });
-              }
-              closeTripModal();
-              showAlert("保存成功！", "success");
-            } catch (e) {
-              console.error("Save error:", e);
-              showAlert(`儲存失敗：${e.message || "未知錯誤"}`, "error");
-            } finally {
-              submitting.value = false;
-            }
-          };
-
-          const confirmDeleteTrip = async (trip) => {
-            const result = await showConfirm(
-              `確定要刪除「${trip.name}」嗎？裡面的行程也會一併刪除喔！`,
-            );
-            if (!result) return;
-            try {
-              const batch = writeBatch(db);
-
-              // 刪除旅程本身
-              batch.delete(doc(db, "travel", trip.id));
-
-              // 刪除所有關聯的行程 (tripId 匹配此旅程)
-              const relatedSchedules = allSchedules.value.filter(
-                (schedule) => schedule.tripId === trip.id,
-              );
-              relatedSchedules.forEach((schedule) => {
-                batch.delete(doc(db, "travel_schedule", schedule.id));
-              });
-
-              // 一次性提交所有刪除操作
-              await batch.commit();
-
-              // Delete image from Storage if exists
-              if (trip.imageUrl) {
-                try {
-                  const imageRef = storageRef(
-                    storage,
-                    `trip-images/${trip.id}`,
-                  );
-                  await deleteObject(imageRef).catch(() => {});
-                } catch (e) {}
-              }
-            } catch (e) {
-              showAlert("刪除失敗", "error");
-            }
+            await submitTripRecord(user);
           };
 
           const openAddModal = () => {
